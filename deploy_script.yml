@@ -200,6 +200,9 @@
       copy:
         dest: /etc/dconf/db/local.d/00-extension-settings
         content: |
+          [org/gnome/shell]
+          enabled-extensions=['just-perfection-desktop@just-perfection']
+
           [org/gnome/shell/extensions/just-perfection]
           panel=false
 
@@ -303,6 +306,7 @@
       copy:
         dest: /etc/dconf/db/local.d/locks/00-extension-settings
         content: |
+          /org/gnome/shell/enabled-extensions
           /org/gnome/shell/extensions/just-perfection/panel
           /org/gnome/shell/extensions/dash-to-dock/show-trash
           /org/gnome/shell/extensions/dash-to-dock/show-mounts
