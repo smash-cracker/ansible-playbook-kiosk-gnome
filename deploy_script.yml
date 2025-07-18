@@ -189,3 +189,38 @@
         DBUS_SESSION_BUS_ADDRESS: "unix:path=/run/user/1000/bus"
       become_user: "{{ user_name }}"
       become: true
+    
+    - name: Set up dconf profile to include system database
+      copy:
+        dest: /etc/dconf/profile/user
+        content: |
+          user-db:user
+          system-db:local
+
+    - name: Add default GNOME settings to system database
+      copy:
+        dest: /etc/dconf/db/local.d/00-extension-settings
+        content: |
+          [org/gnome/shell/extensions/just-perfection]
+          panel=false
+
+          [org/gnome/desktop/wm/preferences]
+          button-layout=':close'
+
+          [org/gnome/desktop/wm/keybindings]
+          maximize=[]
+
+          [org/gnome/shell/extensions/dash-to-dock]
+          autohide=false
+
+    - name: Lock the GNOME settings to prevent user overrides
+      copy:
+        dest: /etc/dconf/db/local.d/locks/00-extension-settings
+        content: |
+          /org/gnome/shell/extensions/just-perfection/panel
+          /org/gnome/desktop/wm/preferences/button-layout
+          /org/gnome/desktop/wm/keybindings/maximize
+          /org/gnome/shell/extensions/dash-to-dock/autohide
+
+    - name: Update dconf system database
+      command: dconf update
