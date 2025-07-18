@@ -1,7 +1,7 @@
-- name: Deploy myscript and create systemd service
+---
+- name: Deploy Just Perfection GNOME extension
   hosts: install_targets
   become: true
-
   tasks:
     - name: Install required packages
       apt:
@@ -10,12 +10,6 @@
           - gnome-shell-extension-manager
         state: present
         update_cache: yes
-        
-    - name: Copy script to remote host
-      copy:
-        src: ./myscript.sh
-        dest: /usr/local/bin/myscript.sh
-        mode: '0755'
 
     - name: Copy just perfection to remote host
       copy:
@@ -23,15 +17,15 @@
         dest: /home/cezen/Documents/just-perfection-26.0.zip
         owner: cezen
         group: cezen
-        mode: '0644'
+        mode: '0664'
 
     - name: Extract just-perfection-26.0.zip
       unarchive:
-        src: /home/cezen//Documents/just-perfection-26.0.zip
+        src: /home/cezen/Documents/just-perfection-26.0.zip
         dest: /home/cezen/Documents/
         owner: cezen
         group: cezen
-        mode: '0755'
+        mode: '0775'
         remote_src: yes
 
     - name: Make build script executable
@@ -53,56 +47,65 @@
         mv /home/cezen/.local/share/gnome-shell/extensions/just-perfection-desktop@just-perfection /usr/share/gnome-shell/extensions/
       become: true
 
-    - name: Execute script with sudo
-      command: /usr/local/bin/myscript.sh
+    - name: Restart GNOME Shell session
+      command: gnome-session-quit --logout --no-prompt
+      environment:
+        DISPLAY: ":0"
+        XDG_CURRENT_DESKTOP: "GNOME"
+        DBUS_SESSION_BUS_ADDRESS: "unix:path=/run/user/1000/bus"
+      become_user: cezen
       become: true
+      ignore_errors: yes
 
-    - name: Copy gschema.xml to global schemas
-      copy:
-        src: /usr/share/gnome-shell/extensions/just-perfection-desktop@just-perfection/schemas/
-        dest: /usr/share/glib-2.0/schemas/
-        mode: '0644'
-        owner: root
-        group: root
-        remote_src: yes
-      become: true
-
-    - name: Recompile global schemas
-      command: glib-compile-schemas /usr/share/glib-2.0/schemas/
-      become: true
-      
-    - name: Reboot the system
-      reboot:
-        reboot_timeout: 600
-
-    - name: Wait for system to be ready
+    - name: Wait for system to be ready after logout
       wait_for_connection:
         timeout: 300
+        delay: 30
 
     - name: Enable Just Perfection GNOME extension
       command: gnome-extensions enable just-perfection-desktop@just-perfection
       environment:
         DISPLAY: ":0"
         XDG_CURRENT_DESKTOP: "GNOME"
-        DBUS_SESSION_BUS_ADDRESS: "unix:path=/run/user/{{ ansible_uid }}/bus"
-    
-    - name: Disable top panel in Just Perfection
+        DBUS_SESSION_BUS_ADDRESS: "unix:path=/run/user/1000/bus"
+      become_user: cezen
+      become: true
+
+    - name: Compile schemas in extension directory (first compilation)
+      command: glib-compile-schemas /usr/share/gnome-shell/extensions/just-perfection-desktop@just-perfection/schemas
+      become: true
+
+    - name: Copy gschema.xml files to global schemas directory
+      shell: cp /usr/share/gnome-shell/extensions/just-perfection-desktop@just-perfection/schemas/*.gschema.xml /usr/share/glib-2.0/schemas/
+      become: true
+
+    - name: Recompile global schemas (second compilation)
+      command: glib-compile-schemas /usr/share/glib-2.0/schemas/
+      become: true
+
+    - name: Test - Disable top panel in Just Perfection
       command: gsettings set org.gnome.shell.extensions.just-perfection panel false
       environment:
         DISPLAY: ":0"
         XDG_CURRENT_DESKTOP: "GNOME"
-        DBUS_SESSION_BUS_ADDRESS: "unix:path=/run/user/{{ ansible_uid }}/bus"
-    
+        DBUS_SESSION_BUS_ADDRESS: "unix:path=/run/user/1000/bus"
+      become_user: cezen
+      become: true
+
     - name: Hide trash icon from Dash to Dock
-      command: gsettings set org.gnome.shell.extensions.dash-to-dock.show-trash false
+      command: gsettings set org.gnome.shell.extensions.dash-to-dock show-trash false
       environment:
         DISPLAY: ":0"
         XDG_CURRENT_DESKTOP: "GNOME"
-        DBUS_SESSION_BUS_ADDRESS: "unix:path=/run/user/{{ ansible_uid }}/bus"
-    
+        DBUS_SESSION_BUS_ADDRESS: "unix:path=/run/user/1000/bus"
+      become_user: cezen
+      become: true
+
     - name: Hide mounts icon from Dash to Dock
-      command: gsettings set org.gnome.shell.extensions.dash-to-dock.show-mounts false
+      command: gsettings set org.gnome.shell.extensions.dash-to-dock show-mounts false
       environment:
         DISPLAY: ":0"
         XDG_CURRENT_DESKTOP: "GNOME"
-        DBUS_SESSION_BUS_ADDRESS: "unix:path=/run/user/{{ ansible_uid }}/bus"
+        DBUS_SESSION_BUS_ADDRESS: "unix:path=/run/user/1000/bus"
+      become_user: cezen
+      become: true
