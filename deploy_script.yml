@@ -1,0 +1,108 @@
+- name: Deploy myscript and create systemd service
+  hosts: install_targets
+  become: true
+
+  tasks:
+    - name: Install required packages
+      apt:
+        name:
+          - gettext
+          - gnome-shell-extension-manager
+        state: present
+        update_cache: yes
+        
+    - name: Copy script to remote host
+      copy:
+        src: ./myscript.sh
+        dest: /usr/local/bin/myscript.sh
+        mode: '0755'
+
+    - name: Copy just perfection to remote host
+      copy:
+        src: ./just-perfection-26.0.zip
+        dest: /home/cezen/Documents/just-perfection-26.0.zip
+        owner: cezen
+        group: cezen
+        mode: '0644'
+
+    - name: Extract just-perfection-26.0.zip
+      unarchive:
+        src: /home/cezen//Documents/just-perfection-26.0.zip
+        dest: /home/cezen/Documents/
+        owner: cezen
+        group: cezen
+        mode: '0755'
+        remote_src: yes
+
+    - name: Make build script executable
+      file:
+        path: /home/cezen/Documents/just-perfection-26.0/scripts/build.sh
+        mode: '0755'
+        owner: cezen
+        group: cezen
+
+    - name: Run just-perfection build script
+      shell: ./scripts/build.sh -i
+      args:
+        chdir: /home/cezen/Documents/just-perfection-26.0
+      become_user: cezen
+      become: true
+
+    - name: Move GNOME extension to system-wide directory
+      shell: |
+        mv /home/cezen/.local/share/gnome-shell/extensions/just-perfection-desktop@just-perfection /usr/share/gnome-shell/extensions/
+      become: true
+
+    - name: Execute script with sudo
+      command: /usr/local/bin/myscript.sh
+      become: true
+
+    - name: Copy gschema.xml to global schemas
+      copy:
+        src: /usr/share/gnome-shell/extensions/just-perfection-desktop@just-perfection/schemas/
+        dest: /usr/share/glib-2.0/schemas/
+        mode: '0644'
+        owner: root
+        group: root
+        remote_src: yes
+      become: true
+
+    - name: Recompile global schemas
+      command: glib-compile-schemas /usr/share/glib-2.0/schemas/
+      become: true
+      
+    - name: Reboot the system
+      reboot:
+        reboot_timeout: 600
+
+    - name: Wait for system to be ready
+      wait_for_connection:
+        timeout: 300
+
+    - name: Enable Just Perfection GNOME extension
+      command: gnome-extensions enable just-perfection-desktop@just-perfection
+      environment:
+        DISPLAY: ":0"
+        XDG_CURRENT_DESKTOP: "GNOME"
+        DBUS_SESSION_BUS_ADDRESS: "unix:path=/run/user/{{ ansible_uid }}/bus"
+    
+    - name: Disable top panel in Just Perfection
+      command: gsettings set org.gnome.shell.extensions.just-perfection panel false
+      environment:
+        DISPLAY: ":0"
+        XDG_CURRENT_DESKTOP: "GNOME"
+        DBUS_SESSION_BUS_ADDRESS: "unix:path=/run/user/{{ ansible_uid }}/bus"
+    
+    - name: Hide trash icon from Dash to Dock
+      command: gsettings set org.gnome.shell.extensions.dash-to-dock.show-trash false
+      environment:
+        DISPLAY: ":0"
+        XDG_CURRENT_DESKTOP: "GNOME"
+        DBUS_SESSION_BUS_ADDRESS: "unix:path=/run/user/{{ ansible_uid }}/bus"
+    
+    - name: Hide mounts icon from Dash to Dock
+      command: gsettings set org.gnome.shell.extensions.dash-to-dock.show-mounts false
+      environment:
+        DISPLAY: ":0"
+        XDG_CURRENT_DESKTOP: "GNOME"
+        DBUS_SESSION_BUS_ADDRESS: "unix:path=/run/user/{{ ansible_uid }}/bus"
