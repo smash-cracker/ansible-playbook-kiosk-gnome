@@ -1,0 +1,53 @@
+- name: Deploy myscript and create systemd service
+  hosts: install_targets
+  become: true
+
+  tasks:
+    - name: Install required packages
+      apt:
+        name:
+          - gettext
+          - gnome-shell-extension-manager
+        state: present
+        update_cache: yes
+
+    - name: Copy just perfection to remote host
+      copy:
+        src: ./just-perfection-26.0.zip
+        dest: /home/cezen/Documents/just-perfection-26.0.zip
+        owner: cezen
+        group: cezen
+        mode: '0664'
+
+    - name: Extract just-perfection-26.0.zip
+      unarchive:
+        src: /home/cezen//Documents/just-perfection-26.0.zip
+        dest: /home/cezen/Documents/
+        owner: cezen
+        group: cezen
+        mode: '0775'
+        remote_src: yes
+
+    # - name: Make build script executable
+    #   file:
+    #     path: /home/cezen/Documents/just-perfection-26.0/scripts/build.sh
+    #     mode: '0755'
+    #     owner: cezen
+    #     group: cezen
+
+    - name: Run just-perfection build script
+      shell: ./scripts/build.sh -i
+      args:
+        chdir: /home/cezen/Documents/just-perfection-26.0
+      become_user: cezen
+      become: true
+
+    - name: Logout GNOME session
+      become_user: cezen
+      become: true
+      shell: |
+        export DISPLAY=:0
+        gnome-session-quit --logout --no-prompt
+      args:
+        executable: /bin/bash
+      ignore_errors: yes
