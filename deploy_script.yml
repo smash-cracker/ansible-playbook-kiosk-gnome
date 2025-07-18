@@ -94,13 +94,30 @@
       command: glib-compile-schemas /usr/share/glib-2.0/schemas/
       become: true
 
+    # - name: Apply GNOME settings from external file
+    #   shell: "{{ item }}"
+    #   args:
+    #     executable: /bin/bash
+    #   become_user: "{{ user_name }}"
+    #   become: true
+    #   loop: "{{ lookup('file', '/path/to/gnome-settings-commands.txt').splitlines() }}"
+
+
     - name: Apply GNOME settings using gsettings
       command: "{{ item }}"
       loop:
+        # Just perfection GNOME extension settings:
         - gsettings set org.gnome.shell.extensions.just-perfection panel false
+        - gsettings set org.gnome.shell.extensions.just-perfection workspace-peek false
+        - gsettings set org.gnome.shell.extensions.just-perfection type-to-search false
+        - gsettings set org.gnome.shell.extensions.just-perfection overlay-key false
+        - gsettings set org.gnome.shell.extensions.just-perfection double-super-to-appgrid false
+        - gsettings set org.gnome.shell.extensions.just-perfection notification-banner-position 2
+        # Ding extension settings:
+        - gsettings set org.gnome.shell.extensions.ding show-trash false
+        # Dash to Dock settings:
         - gsettings set org.gnome.shell.extensions.dash-to-dock show-trash false
         - gsettings set org.gnome.shell.extensions.dash-to-dock show-mounts false
-        - gsettings set org.gnome.shell.extensions.ding show-trash false
         - gsettings set org.gnome.shell.extensions.dash-to-dock dock-fixed false
         - gsettings set org.gnome.shell.extensions.dash-to-dock app-ctrl-hotkey-1 "[]"
         - gsettings set org.gnome.shell.extensions.dash-to-dock app-ctrl-hotkey-2 "[]"
@@ -133,8 +150,10 @@
         - gsettings set org.gnome.shell.extensions.dash-to-dock app-shift-hotkey-9 "[]"
         - gsettings set org.gnome.shell.extensions.dash-to-dock app-shift-hotkey-10 "[]"
         - gsettings set org.gnome.shell.extensions.dash-to-dock autohide false
+        # GNOME shell settings:
         - gsettings set org.gnome.shell development-tools false
         - gsettings set org.gnome.desktop.lockdown disable-user-switching true
+        # GNOME desktop window manager keybindings:
         - gsettings set org.gnome.desktop.wm.keybindings activate-window-menu "[]"
         - gsettings set org.gnome.desktop.wm.keybindings begin-move "[]"
         - gsettings set org.gnome.desktop.wm.keybindings begin-resize "[]"
@@ -178,6 +197,7 @@
         - gsettings set org.gnome.desktop.wm.keybindings switch-windows-backward "[]"
         - gsettings set org.gnome.desktop.wm.keybindings toggle-maximized "[]"
         - gsettings set org.gnome.desktop.wm.keybindings unmaximize "[]"
+        # GNOME desktop window manager preferences:
         - gsettings set org.gnome.desktop.wm.preferences action-double-click-titlebar 'none'
         - gsettings set org.gnome.desktop.wm.preferences action-middle-click-titlebar 'none'
         - gsettings set org.gnome.desktop.wm.preferences action-right-click-titlebar 'none'
@@ -205,6 +225,11 @@
 
           [org/gnome/shell/extensions/just-perfection]
           panel=false
+          workspace-peek=false
+          type-to-search=false
+          overlay-key=false
+          double-super-to-appgrid=false
+          notification-banner-position=2
 
           [org/gnome/shell/extensions/dash-to-dock]
           show-trash=false
@@ -308,6 +333,11 @@
         content: |
           /org/gnome/shell/enabled-extensions
           /org/gnome/shell/extensions/just-perfection/panel
+          /org/gnome/shell/extensions/just-perfection/workspace-peek
+          /org/gnome/shell/extensions/just-perfection/type-to-search
+          /org/gnome/shell/extensions/just-perfection/overlay-key
+          /org/gnome/shell/extensions/just-perfection/double-super-to-appgrid
+          /org/gnome/shell/extensions/just-perfection/notification-banner-position
           /org/gnome/shell/extensions/dash-to-dock/show-trash
           /org/gnome/shell/extensions/dash-to-dock/show-mounts
           /org/gnome/shell/extensions/dash-to-dock/dock-fixed
