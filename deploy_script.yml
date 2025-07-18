@@ -2,6 +2,10 @@
 - name: Deploy Just Perfection GNOME extension
   hosts: install_targets
   become: true
+
+  vars:
+  user_name: karthik
+
   tasks:
     - name: Install required packages
       apt:
@@ -14,37 +18,37 @@
     - name: Copy just perfection to remote host
       copy:
         src: ./just-perfection-26.0.zip
-        dest: /home/cezen/Documents/just-perfection-26.0.zip
-        owner: cezen
-        group: cezen
+        dest: /home/{{ user_name }}/Documents/just-perfection-26.0.zip
+        owner: {{ user_name }}
+        group: {{ user_name }}
         mode: '0664'
 
     - name: Extract just-perfection-26.0.zip
       unarchive:
-        src: /home/cezen/Documents/just-perfection-26.0.zip
-        dest: /home/cezen/Documents/
-        owner: cezen
-        group: cezen
+        src: /home/{{ user_name }}/Documents/just-perfection-26.0.zip
+        dest: /home/{{ user_name }}/Documents/
+        owner: {{ user_name }}
+        group: {{ user_name }}
         mode: '0775'
         remote_src: yes
 
     - name: Make build script executable
       file:
-        path: /home/cezen/Documents/just-perfection-26.0/scripts/build.sh
+        path: /home/{{ user_name }}/Documents/just-perfection-26.0/scripts/build.sh
         mode: '0755'
-        owner: cezen
-        group: cezen
+        owner: {{ user_name }}
+        group: {{ user_name }}
 
     - name: Run just-perfection build script
       shell: ./scripts/build.sh -i
       args:
-        chdir: /home/cezen/Documents/just-perfection-26.0
-      become_user: cezen
+        chdir: /home/{{ user_name }}/Documents/just-perfection-26.0
+      become_user: {{ user_name }}
       become: true
 
     - name: Move GNOME extension to system-wide directory
       shell: |
-        mv /home/cezen/.local/share/gnome-shell/extensions/just-perfection-desktop@just-perfection /usr/share/gnome-shell/extensions/
+        mv /home/{{ user_name }}/.local/share/gnome-shell/extensions/just-perfection-desktop@just-perfection /usr/share/gnome-shell/extensions/
       become: true
 
     - name: Restart GNOME Shell session
@@ -53,7 +57,7 @@
         DISPLAY: ":0"
         XDG_CURRENT_DESKTOP: "GNOME"
         DBUS_SESSION_BUS_ADDRESS: "unix:path=/run/user/1000/bus"
-      become_user: cezen
+      become_user: {{ user_name }}
       become: true
       ignore_errors: yes
 
@@ -68,7 +72,7 @@
         DISPLAY: ":0"
         XDG_CURRENT_DESKTOP: "GNOME"
         DBUS_SESSION_BUS_ADDRESS: "unix:path=/run/user/1000/bus"
-      become_user: cezen
+      become_user: {{ user_name }}
       become: true
 
     - name: Compile schemas in extension directory (first compilation)
@@ -89,23 +93,23 @@
         DISPLAY: ":0"
         XDG_CURRENT_DESKTOP: "GNOME"
         DBUS_SESSION_BUS_ADDRESS: "unix:path=/run/user/1000/bus"
-      become_user: cezen
+      become_user: {{ user_name }}
       become: true
 
-    - name: Hide trash icon from Dash to Dock
-      command: gsettings set org.gnome.shell.extensions.dash-to-dock show-trash false
-      environment:
-        DISPLAY: ":0"
-        XDG_CURRENT_DESKTOP: "GNOME"
-        DBUS_SESSION_BUS_ADDRESS: "unix:path=/run/user/1000/bus"
-      become_user: cezen
-      become: true
+    # - name: Hide trash icon from Dash to Dock
+    #   command: gsettings set org.gnome.shell.extensions.dash-to-dock show-trash false
+    #   environment:
+    #     DISPLAY: ":0"
+    #     XDG_CURRENT_DESKTOP: "GNOME"
+    #     DBUS_SESSION_BUS_ADDRESS: "unix:path=/run/user/1000/bus"
+    #   become_user: {{ user_name }}
+    #   become: true
 
-    - name: Hide mounts icon from Dash to Dock
-      command: gsettings set org.gnome.shell.extensions.dash-to-dock show-mounts false
-      environment:
-        DISPLAY: ":0"
-        XDG_CURRENT_DESKTOP: "GNOME"
-        DBUS_SESSION_BUS_ADDRESS: "unix:path=/run/user/1000/bus"
-      become_user: cezen
-      become: true
+    # - name: Hide mounts icon from Dash to Dock
+    #   command: gsettings set org.gnome.shell.extensions.dash-to-dock show-mounts false
+    #   environment:
+    #     DISPLAY: ":0"
+    #     XDG_CURRENT_DESKTOP: "GNOME"
+    #     DBUS_SESSION_BUS_ADDRESS: "unix:path=/run/user/1000/bus"
+    #   become_user: {{ user_name }}
+    #   become: true
