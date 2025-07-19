@@ -441,15 +441,3 @@
 
     - name: Update dconf system database
       command: dconf update
-
-    - name: Copy AppImageLauncher deb package to remote
-      copy:
-        src: ./appimagelauncher_2.2.0-travis995.0f91801.bionic_amd64.deb
-        dest: /tmp/appimagelauncher_2.2.0-travis995.0f91801.bionic_amd64.deb
-        mode: '0644'
-
-    - name: Install AppImageLauncher from deb package
-      apt:
-        deb: /tmp/appimagelauncher_2.2.0-travis995.0f91801.bionic_amd64.deb
-        state: present
-      become: yes
