@@ -1,0 +1,41 @@
+---
+- name: Deploy VoIP AppImage application
+  hosts: install_targets
+  become: true
+  vars:
+    user_name: karthik
+  tasks:
+    - name: Create Applications directory for user
+      file:
+        path: /home/{{ user_name }}/Applications
+        state: directory
+        mode: '0755'
+        owner: "{{ user_name }}"
+        group: "{{ user_name }}"
+
+    - name: Copy VoIP AppImage to user Applications folder
+      copy:
+        src: ./voip-x86_64_v1.0.0.AppImage
+        dest: /home/{{ user_name }}/Applications/voip-x86_64_v1.0.0.AppImage
+        mode: '0755'
+        owner: "{{ user_name }}"
+        group: "{{ user_name }}"
+  
+    - name: Run AppImage to trigger AppImageLauncher integration
+      command: /home/{{ user_name }}/Applications/voip-x86_64_v1.0.0.AppImage --appimage-extract-and-run
+      become_user: "{{ user_name }}"
+      environment:
+        DISPLAY: ":0"
+      register: appimage_run
+      failed_when: false
+      changed_when: false
+    
+    - name: Restart GNOME Shell session
+      command: gnome-session-quit --logout --no-prompt
+      environment:
+        DISPLAY: ":0"
+        XDG_CURRENT_DESKTOP: "GNOME"
+        DBUS_SESSION_BUS_ADDRESS: "unix:path=/run/user/1000/bus"
+      become_user: "{{ user_name }}"
+      become: true
+      ignore_errors: yes
