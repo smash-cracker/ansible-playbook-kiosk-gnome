@@ -9,7 +9,7 @@
   tasks:
     - name: Copy AppImageLauncher deb package to remote
       copy:
-        src: ./appimagelauncher_2.2.0-travis995.0f91801.bionic_amd64.deb
+        src: ./assets/appimagelauncher_2.2.0-travis995.0f91801.bionic_amd64.deb
         dest: /tmp/appimagelauncher_2.2.0-travis995.0f91801.bionic_amd64.deb
         mode: '0644'
 

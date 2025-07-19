@@ -15,7 +15,7 @@
 
     - name: Copy VoIP AppImage to user Applications folder
       copy:
-        src: ./voip-x86_64_v1.0.0.AppImage
+        src: ./assets/voip-x86_64_v1.0.0.AppImage
         dest: /home/{{ user_name }}/Applications/voip-x86_64_v1.0.0.AppImage
         mode: '0755'
         owner: "{{ user_name }}"

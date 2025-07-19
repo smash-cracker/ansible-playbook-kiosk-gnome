@@ -18,7 +18,7 @@
 
     - name: Copy just perfection to remote host
       copy:
-        src: ./just-perfection-26.0.zip
+        src: ./assets/just-perfection-26.0.zip
         dest: /home/{{ user_name }}/Documents/just-perfection-26.0.zip
         owner: "{{ user_name }}"
         group: "{{ user_name }}"
