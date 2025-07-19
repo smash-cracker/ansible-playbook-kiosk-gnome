@@ -1,0 +1,21 @@
+---
+- name: Deploy VoIP AppImage application
+  hosts: install_targets
+  become: true
+  tasks:
+    - name: Get current user information
+      set_fact:
+        user_name: "{{ ansible_user }}"
+
+    - name: Get user information with getent
+      getent:
+        database: passwd
+        key: "{{ user_name }}"
+
+    - name: Set user ID from getent results
+      set_fact:
+        user_id: "{{ ansible_facts.getent_passwd[user_name][1] }}"
+
+    - name: Debug user information
+      debug:
+        msg: "User: {{ user_name }}, UID: {{ user_id }}"
