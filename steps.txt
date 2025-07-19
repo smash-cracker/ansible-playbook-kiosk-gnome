@@ -1,0 +1,8 @@
+--------generate ssh key-------------
+ssh-keygen -t ed25519 -C "comment"
+
+cat /home/acer/.ssh/id_ed25519.pub
+
+ssh-copy-id karthik@172.20.100.168
+--------generate ssh key-------------
+
