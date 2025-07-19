@@ -3,6 +3,10 @@
   hosts: install_targets
   become: true
   gather_facts: true
+
+  vars:
+    user_name: karthik
+
   tasks:
     - name: Remove dconf locks file to unlock GNOME settings
       file:
@@ -20,6 +24,15 @@
       command: dconf update
       become: true
 
+    - name: Reset user dconf settings to defaults
+      command: dconf reset -f /
+      environment:
+        DISPLAY: ":0"
+        XDG_CURRENT_DESKTOP: "GNOME"
+        DBUS_SESSION_BUS_ADDRESS: "unix:path=/run/user/1000/bus"
+      become_user: "{{ user_name }}"
+      become: true
+
     - name: Notify users to restart GNOME Shell session
       debug:
-        msg: "GNOME settings have been unlocked. Users should log out and back in or restart GNOME Shell (Alt+F2, type 'r', press Enter) for changes to take effect."
+        msg: "GNOME settings have been unlocked and reset to defaults. Users should log out and back in or restart GNOME Shell (Alt+F2, type 'r', press Enter) for changes to take effect."
