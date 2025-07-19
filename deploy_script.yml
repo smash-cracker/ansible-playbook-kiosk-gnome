@@ -4,7 +4,7 @@
   become: true
 
   vars:
-    user_name: zebronics
+    user_name: karthik
 
   tasks:
     - name: Install required packages
@@ -215,6 +215,14 @@
         content: |
           user-db:user
           system-db:local
+    
+    - name: Create dconf local.d directory
+      file:
+        path: /etc/dconf/db/local.d
+        state: directory
+        mode: '0755'
+        owner: root
+        group: root
 
     - name: Add default GNOME settings to system database
       copy:
@@ -326,6 +334,14 @@
           action-middle-click-titlebar='none'
           action-right-click-titlebar='none'
           button-layout=':close'
+
+    - name: Create dconf locks directory
+      file:
+        path: /etc/dconf/db/local.d/locks
+        state: directory
+        mode: '0755'
+        owner: root
+        group: root
 
     - name: Lock the GNOME settings to prevent user overrides
       copy:
