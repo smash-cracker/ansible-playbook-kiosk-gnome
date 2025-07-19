@@ -18,4 +18,4 @@
 
     - name: Debug user information
       debug:
-        msg: "User: {{ user_name }}, UID: {{ user_id }}"
+        msg: " AUser: {{ ansible_user }} User: {{ user_name }}, UID: {{ user_id }}"
