@@ -162,7 +162,9 @@
         - gsettings set org.gnome.shell.extensions.dash-to-dock autohide false
         # GNOME shell settings:
         - gsettings set org.gnome.shell development-tools false
+        # GNOME desktop lockdown settings:
         - gsettings set org.gnome.desktop.lockdown disable-user-switching true
+        - gsettings set org.gnome.desktop.lockdown disable-lock-screen true
         # GNOME desktop window manager keybindings:
         - gsettings set org.gnome.desktop.wm.keybindings activate-window-menu "[]"
         - gsettings set org.gnome.desktop.wm.keybindings begin-move "[]"
@@ -213,7 +215,7 @@
         - gsettings set org.gnome.desktop.wm.preferences action-right-click-titlebar 'none'
         - gsettings set org.gnome.desktop.wm.preferences button-layout ':close'
         - gnome-extensions disable ubuntu-dock@ubuntu.com
-        
+        # GNOME desktop screensaver settings:
         - gsettings set org.gnome.desktop.screensaver ubuntu-lock-on-suspend false
       environment:
         DISPLAY: ":0"
