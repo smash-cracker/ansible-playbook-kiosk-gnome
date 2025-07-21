@@ -25,6 +25,14 @@
         owner: "{{ user_name }}"
         group: "{{ user_name }}"
         mode: '0664'
+  
+    - name: Copy just perfection to remote host
+      copy:
+        src: ./assets/disable-finger-gestures.com.zip
+        dest: /home/{{ user_name }}/Documents/disable-finger-gestures.com.zip
+        owner: "{{ user_name }}"
+        group: "{{ user_name }}"
+        mode: '0664'
 
     - name: Extract just-perfection-26.0.zip
       unarchive:
@@ -34,6 +42,15 @@
         group: "{{ user_name }}"
         mode: '0775'
         remote_src: yes
+    
+    - name: Install disable-gestures GNOME extension
+      command: gnome-extensions install /home/{{ user_name }}/Documents/disable-finger-gestures.com.zip
+      environment:
+        DISPLAY: ":0"
+        XDG_CURRENT_DESKTOP: "GNOME"
+        DBUS_SESSION_BUS_ADDRESS: "unix:path=/run/user/1000/bus"
+      become_user: "{{ user_name }}"
+      become: true
 
     - name: Make build script executable
       file:
@@ -217,6 +234,9 @@
         - gnome-extensions disable ubuntu-dock@ubuntu.com
         # GNOME desktop screensaver settings:
         - gsettings set org.gnome.desktop.screensaver ubuntu-lock-on-suspend false
+        # Miscallaneous settings:
+        - gsettings set com.ubuntu.SoftwareProperties ubuntu-pro-banner-visible false
+        - gsettings set org.gnome.desktop.notifications show-banners false
       environment:
         DISPLAY: ":0"
         XDG_CURRENT_DESKTOP: "GNOME"
@@ -244,7 +264,7 @@
         dest: /etc/dconf/db/local.d/00-extension-settings
         content: |
           [org/gnome/shell]
-          enabled-extensions=['just-perfection-desktop@just-perfection']
+          enabled-extensions=['just-perfection-desktop@just-perfection','disable-finger-gestures.com']
           disabled-extensions=['ubuntu-dock@ubuntu.com']
 
           [org/gnome/shell/extensions/just-perfection]
