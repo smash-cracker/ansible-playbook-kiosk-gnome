@@ -4,7 +4,7 @@
   become: true
 
   vars:
-    user_name: karthik
+    user_name: cezen
 
   tasks:
     - name: Install required packages
@@ -66,7 +66,6 @@
           [daemon]
           AutomaticLoginEnable = true
           AutomaticLogin = {{ user_name }}
-      notify: Restart GDM
 
     - name: Reboot the system
       reboot:
