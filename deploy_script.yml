@@ -57,21 +57,21 @@
         mv /home/{{ user_name }}/.local/share/gnome-shell/extensions/just-perfection-desktop@just-perfection /usr/share/gnome-shell/extensions/
       become: true
       when: not extension_dir.stat.exists
+    
+    - name: Enable automatic login in GDM
+      blockinfile:
+        path: /etc/gdm3/custom.conf
+        marker: "# {mark} ANSIBLE MANAGED BLOCK"
+        block: |
+          [daemon]
+          AutomaticLoginEnable = true
+          AutomaticLogin = {{ user_name }}
+      notify: Restart GDM
 
-    - name: Restart GNOME Shell session
-      command: gnome-session-quit --logout --no-prompt
-      environment:
-        DISPLAY: ":0"
-        XDG_CURRENT_DESKTOP: "GNOME"
-        DBUS_SESSION_BUS_ADDRESS: "unix:path=/run/user/1000/bus"
-      become_user: "{{ user_name }}"
-      become: true
-      ignore_errors: yes
-
-    - name: Wait for system to be ready after logout
-      wait_for_connection:
-        timeout: 300
-        delay: 30
+    - name: Reboot the system
+      reboot:
+        msg: "Rebooting after GNOME extension installation"
+        reboot_timeout: 300
 
     - name: Enable Just Perfection GNOME extension
       command: gnome-extensions enable just-perfection-desktop@just-perfection

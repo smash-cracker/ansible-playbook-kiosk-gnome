@@ -4,10 +4,17 @@
   become: true
   gather_facts: true
 
-  vars:
-    user_name: karthik
-
   tasks:
+    - name: Get current remote user
+      set_fact:
+        user_name: "{{ ansible_user_id }}" 
+
+    - name: Get user information using getent
+      getent:
+        database: passwd
+        key: "{{ user_name }}"
+      register: getent_output
+
     - name: Remove dconf locks file to unlock GNOME settings
       file:
         path: /etc/dconf/db/local.d/locks/00-extension-settings
@@ -29,7 +36,7 @@
       environment:
         DISPLAY: ":0"
         XDG_CURRENT_DESKTOP: "GNOME"
-        DBUS_SESSION_BUS_ADDRESS: "unix:path=/run/user/1000/bus"
+        DBUS_SESSION_BUS_ADDRESS: "unix:path=/run/user/{{ ansible_user_id }}/bus"
       become_user: "{{ user_name }}"
       become: true
 
