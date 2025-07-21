@@ -69,6 +69,15 @@
           AutomaticLoginEnable = true
           AutomaticLogin = {{ user_name }}
 
+    - name: Disable Ubuntu release upgrade GUI prompt
+      lineinfile:
+        path: /etc/update-manager/release-upgrades
+        regexp: '^Prompt='
+        line: 'Prompt=never'
+        owner: root
+        group: root
+        mode: '0644'
+
     - name: Reboot the system
       reboot:
         msg: "Rebooting after GNOME extension installation"
