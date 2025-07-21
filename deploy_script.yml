@@ -113,15 +113,6 @@
       command: glib-compile-schemas /usr/share/glib-2.0/schemas/
       become: true
 
-    # - name: Apply GNOME settings from external file
-    #   shell: "{{ item }}"
-    #   args:
-    #     executable: /bin/bash
-    #   become_user: "{{ user_name }}"
-    #   become: true
-    #   loop: "{{ lookup('file', '/path/to/gnome-settings-commands.txt').splitlines() }}"
-
-
     - name: Apply GNOME settings using gsettings
       command: "{{ item }}"
       loop:
@@ -222,6 +213,8 @@
         - gsettings set org.gnome.desktop.wm.preferences action-right-click-titlebar 'none'
         - gsettings set org.gnome.desktop.wm.preferences button-layout ':close'
         - gnome-extensions disable ubuntu-dock@ubuntu.com
+        
+        - gsettings set org.gnome.desktop.screensaver ubuntu-lock-on-suspend false
       environment:
         DISPLAY: ":0"
         XDG_CURRENT_DESKTOP: "GNOME"

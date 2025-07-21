@@ -1,0 +1,5 @@
+1. sudo su
+
+2. apt update
+
+3. apt install openssh-server
