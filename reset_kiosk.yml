@@ -7,7 +7,7 @@
   tasks:
     - name: Get current remote user
       set_fact:
-        user_name: "{{ ansible_user_id }}" 
+        user_name: "cezen"
 
     - name: Get user information using getent
       getent:
@@ -36,7 +36,7 @@
       environment:
         DISPLAY: ":0"
         XDG_CURRENT_DESKTOP: "GNOME"
-        DBUS_SESSION_BUS_ADDRESS: "unix:path=/run/user/{{ ansible_user_id }}/bus"
+        DBUS_SESSION_BUS_ADDRESS: "unix:path=/run/user/1000/bus"
       become_user: "{{ user_name }}"
       become: true
 
