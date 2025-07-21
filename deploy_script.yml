@@ -78,6 +78,15 @@
         group: root
         mode: '0644'
 
+    - name: Disable Apport crash reporting (no more error popups)
+      lineinfile:
+        path: /etc/default/apport
+        regexp: '^enabled='
+        line: 'enabled=0'
+        owner: root
+        group: root
+        mode: '0644'
+
     - name: Reboot the system
       reboot:
         msg: "Rebooting after GNOME extension installation"

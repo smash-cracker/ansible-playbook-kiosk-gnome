@@ -4,6 +4,10 @@
   become: true
   vars:
     user_name: cezen
+    appimage_name: voip-x86_64_v1.0.0.AppImage
+    appimage_path: /home/cezen/Applications/voip-x86_64_v1.0.0.AppImage
+    desktop_file_path: /home/cezen/.config/autostart/voip.desktop
+
   tasks:
     - name: Create Applications directory for user
       file:
@@ -15,27 +19,37 @@
 
     - name: Copy VoIP AppImage to user Applications folder
       copy:
-        src: ./assets/voip-x86_64_v1.0.0.AppImage
-        dest: /home/{{ user_name }}/Applications/voip-x86_64_v1.0.0.AppImage
+        src: ./assets/{{ appimage_name }}
+        dest: "{{ appimage_path }}"
         mode: '0755'
         owner: "{{ user_name }}"
         group: "{{ user_name }}"
-  
-    - name: Run AppImage to trigger AppImageLauncher integration
-      command: /home/{{ user_name }}/Applications/voip-x86_64_v1.0.0.AppImage --appimage-extract-and-run
-      become_user: "{{ user_name }}"
-      environment:
-        DISPLAY: ":0"
-      register: appimage_run
-      failed_when: false
-      changed_when: false
-    
-    - name: Restart GNOME Shell session
-      command: gnome-session-quit --logout --no-prompt
-      environment:
-        DISPLAY: ":0"
-        XDG_CURRENT_DESKTOP: "GNOME"
-        DBUS_SESSION_BUS_ADDRESS: "unix:path=/run/user/1000/bus"
-      become_user: "{{ user_name }}"
-      become: true
-      ignore_errors: yes
+
+    - name: Create autostart config directory
+      file:
+        path: /home/{{ user_name }}/.config/autostart
+        state: directory
+        mode: '0755'
+        owner: "{{ user_name }}"
+        group: "{{ user_name }}"
+
+    - name: Create .desktop file to run AppImage at startup
+      copy:
+        dest: "{{ desktop_file_path }}"
+        content: |
+          [Desktop Entry]
+          Type=Application
+          Exec={{ appimage_path }}
+          Hidden=false
+          NoDisplay=false
+          X-GNOME-Autostart-enabled=true
+          Name=CVoIP
+          Comment=Start CVoIP App on login
+        mode: '0644'
+        owner: "{{ user_name }}"
+        group: "{{ user_name }}"
+
+    - name: Reboot the system
+      reboot:
+        msg: "Rebooting after VoIP AppImage deployment"
+        reboot_timeout: 300

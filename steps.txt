@@ -10,3 +10,6 @@ ssh-copy-id karthik@172.16.11.185
 ----------start Ansible--------------
 ANSIBLE_HOST_KEY_CHECKING=False ansible-playbook -i hosts.ini deploy_script.yml -vv
 ----------start Ansible--------------
+
+
+ssh-keygen -f "/home/acer/.ssh/known_hosts" -R "192.168.1.14"

@@ -18,3 +18,8 @@
         deb: /tmp/appimagelauncher_2.2.0-travis995.0f91801.bionic_amd64.deb
         state: present
       become: yes
+
+    - name: Reboot the system
+      reboot:
+        msg: "Rebooting after GNOME extension installation"
+        reboot_timeout: 300
