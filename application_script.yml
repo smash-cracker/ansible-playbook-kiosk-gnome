@@ -3,7 +3,7 @@
   hosts: install_targets
   become: true
   vars:
-    user_name: karthik
+    user_name: cezen
   tasks:
     - name: Create Applications directory for user
       file:

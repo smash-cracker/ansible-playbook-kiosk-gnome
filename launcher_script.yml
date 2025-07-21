@@ -4,7 +4,7 @@
   become: true
 
   vars:
-    user_name: karthik
+    user_name: cezen
 
   tasks:
     - name: Copy AppImageLauncher deb package to remote

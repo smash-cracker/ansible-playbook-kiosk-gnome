@@ -43,3 +43,8 @@
     - name: Notify users to restart GNOME Shell session
       debug:
         msg: "GNOME settings have been unlocked and reset to defaults. Users should log out and back in or restart GNOME Shell (Alt+F2, type 'r', press Enter) for changes to take effect."
+    
+    - name: Reboot the system
+      reboot:
+        msg: "Rebooting after GNOME extension installation"
+        reboot_timeout: 300

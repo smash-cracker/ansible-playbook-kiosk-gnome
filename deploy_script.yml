@@ -13,6 +13,8 @@
           - gettext
           - gnome-shell-extension-manager
           - libglib2.0-dev-bin
+          - libfuse2
+          - dconf-editor
         state: present
         update_cache: yes
 
