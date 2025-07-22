@@ -4,8 +4,8 @@
   become: true
   vars:
     user_name: cezen
-    appimage_name: voip-x86_64_v1.0.0.AppImage
-    appimage_path: /home/cezen/Applications/voip-x86_64_v1.0.0.AppImage
+    appimage_name: voip-x86_64_v1.0.1.AppImage
+    appimage_path: /home/cezen/Applications/voip-x86_64_v1.0.1.AppImage
     desktop_file_path: /home/cezen/.config/autostart/voip.desktop
 
   tasks:
