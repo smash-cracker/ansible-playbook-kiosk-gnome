@@ -5,6 +5,32 @@
 
   vars:
     user_name: cezen
+    panels_to_disable:
+    - gnome-camera-panel.desktop
+    - gnome-color-panel.desktop
+    - gnome-default-apps-panel.desktop
+    - gnome-bluetooth-panel.desktop
+    - gnome-background-panel.desktop
+    - gnome-multitasking-panel.desktop
+    - gnome-sharing-panel.desktop
+    - gnome-applications-panel.desktop
+    - gnome-notifications-panel.desktop
+    - gnome-online-accounts-panel.desktop
+    - gnome-printers-panel.desktop
+    - gnome-region-panel.desktop
+    - gnome-removable-media-panel.desktop
+    - gnome-user-accounts-panel.desktop
+    - gnome-ubuntu-panel.desktop
+    - gnome-keyboard-panel.desktop
+    - gnome-mouse-panel.desktop
+# 
+    - gnome-usage-panel.desktop
+    - gnome-thunderbolt-panel.desktop
+    - gnome-location-panel.desktop
+    - gnome-diagnostics-panel.desktop
+    - gnome-connectivity-panel.desktop
+    - gnome-search-panel.desktop
+    - gnome-display-panel.desktop
 
   tasks:
     - name: Install required packages
@@ -18,6 +44,22 @@
         state: present
         update_cache: yes
 
+    - name: Rename unwanted .desktop files
+      command: >
+        mv /usr/share/applications/{{ item }}
+           /usr/share/applications/{{ item }}.disabled
+      args:
+        creates: "/usr/share/applications/{{ item }}.disabled"
+      ignore_errors: true
+      loop: "{{ panels_to_disable }}"
+      register: rename_result
+
+    # - name: Set permissions to 000 on disabled desktop files
+    #   file:
+    #     path: "/usr/share/applications/{{ item }}.disabled"
+    #     mode: '0000'
+    #   loop: "{{ panels_to_disable }}"
+    #   when: "rename_result.results[loop.index0] is not skipped"
     - name: Copy just perfection to remote host
       copy:
         src: ./assets/just-perfection-26.0.zip
