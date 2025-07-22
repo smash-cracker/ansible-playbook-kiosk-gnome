@@ -288,6 +288,7 @@
         # Miscallaneous settings:
         - gsettings set com.ubuntu.SoftwareProperties ubuntu-pro-banner-visible false
         - gsettings set org.gnome.desktop.notifications show-banners false
+        - gsettings set org.gnome.desktop.a11y.applications screen-keyboard-enabled true
       environment:
         DISPLAY: ":0"
         XDG_CURRENT_DESKTOP: "GNOME"
