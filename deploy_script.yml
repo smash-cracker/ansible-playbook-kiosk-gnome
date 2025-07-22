@@ -118,6 +118,15 @@
       become_user: "{{ user_name }}"
       become: true
 
+    - name: Enable Disable Finger gestures GNOME extension
+      command: gnome-extensions enable disable-finger-gestures.com
+      environment:
+        DISPLAY: ":0"
+        XDG_CURRENT_DESKTOP: "GNOME"
+        DBUS_SESSION_BUS_ADDRESS: "unix:path=/run/user/1000/bus"
+      become_user: "{{ user_name }}"
+      # become: true
+
     - name: Compile schemas in extension directory (first compilation)
       command: glib-compile-schemas /usr/share/gnome-shell/extensions/just-perfection-desktop@just-perfection/schemas
       become: true
