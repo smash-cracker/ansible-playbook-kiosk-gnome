@@ -3,7 +3,7 @@ ssh-keygen -t ed25519 -C "comment"
 
 cat /home/acer/.ssh/id_ed25519.pub
 
-ssh-copy-id karthik@172.16.11.185
+ssh-copy-id cezen@172.16.11.185
 --------generate ssh key-------------
 
 
@@ -13,3 +13,12 @@ ANSIBLE_HOST_KEY_CHECKING=False ansible-playbook -i hosts.ini deploy_script.yml 
 
 
 ssh-keygen -f "/home/acer/.ssh/known_hosts" -R "192.168.1.14"
+
+
+Notes
+file path: /home/acer/.ssh/id_ed25519
+
+sudo apt update
+sudo apt install software-properties-common
+sudo add-apt-repository --yes --update ppa:ansible/ansible
+sudo apt install ansible

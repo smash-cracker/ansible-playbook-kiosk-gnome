@@ -3,3 +3,6 @@
 2. apt update
 
 3. apt install openssh-server
+
+4. ip a 
+   Note down ip address (Eg: 192.168.1.x)

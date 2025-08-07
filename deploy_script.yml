@@ -289,6 +289,36 @@
         - gsettings set com.ubuntu.SoftwareProperties ubuntu-pro-banner-visible false
         - gsettings set org.gnome.desktop.notifications show-banners false
         - gsettings set org.gnome.desktop.a11y.applications screen-keyboard-enabled true
+        # GNOME Final Settings
+        # - gsettings set org.gnome.settings-daemon.plugins.media-keys terminal "[]" 
+        # - gsettings set org.gnome.settings-daemon.plugins.media-keys help "[]" 
+        # - gsettings set org.gnome.mutter.wayland.keybindings switch-to-session-1 "[]" 
+        # - gsettings set org.gnome.mutter.wayland.keybindings switch-to-session-2 "[]" 
+        # - gsettings set org.gnome.mutter.wayland.keybindings switch-to-session-3 "[]" 
+        # - gsettings set org.gnome.mutter.wayland.keybindings switch-to-session-4 "[]" 
+        # - gsettings set org.gnome.mutter.wayland.keybindings switch-to-session-5 "[]" 
+        # - gsettings set org.gnome.mutter.wayland.keybindings switch-to-session-6 "[]" 
+        # - gsettings set org.gnome.mutter.wayland.keybindings switch-to-session-7 "[]" 
+        # - gsettings set org.gnome.mutter.wayland.keybindings switch-to-session-8 "[]" 
+        # - gsettings set org.gnome.mutter.wayland.keybindings switch-to-session-9 "[]" 
+        # - gsettings set org.gnome.mutter.wayland.keybindings switch-to-session-9 "[]" 
+        # - gsettings set org.gnome.mutter.wayland.keybindings restore-shortcuts "[]" 
+    
+        # [org/gnome/settings-daemon/plugins/media-keys]
+        # terminal=@as []
+        # help=@as []
+
+        # [org/gnome/mutter/wayland/keybindings]
+        # switch-to-session-1=@as []
+        # switch-to-session-2=@as []
+        # switch-to-session-3=@as []
+        # switch-to-session-4=@as []
+        # switch-to-session-5=@as []
+        # switch-to-session-6=@as []
+        # switch-to-session-7=@as []
+        # switch-to-session-8=@as []
+        # switch-to-session-9=@as []
+        # restore-shortcuts=@as []
       environment:
         DISPLAY: ":0"
         XDG_CURRENT_DESKTOP: "GNOME"

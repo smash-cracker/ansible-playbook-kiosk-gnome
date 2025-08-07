@@ -4,9 +4,11 @@
   become: true
   vars:
     user_name: cezen
-    appimage_name: voip-x86_64_v1.0.1.AppImage
-    appimage_path: /home/cezen/Applications/voip-x86_64_v1.0.1.AppImage
-    desktop_file_path: /home/cezen/.config/autostart/voip.desktop
+    appimage_name: voip-x86_64_v1.4.6.AppImage
+    appimage_path: /home/{{ user_name }}/Applications/{{ appimage_name }}
+    desktop_file_path: /home/{{ user_name }}/.config/autostart/voip.desktop
+    systemd_user_dir: /home/{{ user_name }}/.config/systemd/user
+    service_unit: voip.service
 
   tasks:
     - name: Create Applications directory for user
@@ -49,7 +51,43 @@
         owner: "{{ user_name }}"
         group: "{{ user_name }}"
 
+    - name: Ensure systemd user unit directory exists
+      file:
+        path: "{{ systemd_user_dir }}"
+        state: directory
+        mode: '0755'
+        owner: "{{ user_name }}"
+        group: "{{ user_name }}"
+
+    - name: Deploy voip.service user unit
+      copy:
+        dest: "{{ systemd_user_dir }}/{{ service_unit }}"
+        content: |
+          [Unit]
+          Description=Auto-restart VoIP AppImage
+
+          [Service]
+          ExecStart={{ appimage_path }}
+          Restart=always
+          RestartSec=5
+
+          [Install]
+          WantedBy=default.target
+        mode: '0644'
+        owner: "{{ user_name }}"
+        group: "{{ user_name }}"
+
+    - name: Reload and enable user service (as cezen)
+      become: false
+      become_user: "{{ user_name }}"
+      shell: |
+        systemctl --user daemon-reload
+        systemctl --user enable {{ service_unit }}
+        systemctl --user start {{ service_unit }}
+      args:
+        executable: /bin/bash
+
     - name: Reboot the system
       reboot:
-        msg: "Rebooting after VoIP AppImage deployment"
+        msg: "Rebooting after VoIP AppImage and systemd service deployment"
         reboot_timeout: 300
