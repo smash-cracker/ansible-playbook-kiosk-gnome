@@ -1,0 +1,76 @@
+---
+- name: Setup I2C device access permissions
+  hosts: all
+  become: yes
+  vars:
+    target_user: "{{ ansible_user }}"
+    
+  tasks:
+    - name: Update package cache and install i2c-tools
+      apt:
+        name: i2c-tools
+        state: present
+        update_cache: yes
+
+    - name: Detect I2C bus
+      command: i2cdetect -y 1
+      register: i2c_detect
+      become: yes
+      changed_when: false
+
+    - name: Display I2C detection results
+      debug:
+        var: i2c_detect.stdout_lines
+
+    - name: Check /dev/i2c-1 permissions
+      stat:
+        path: /dev/i2c-1
+      register: i2c_device
+
+    - name: Display current /dev/i2c-1 info
+      debug:
+        msg: "{{ i2c_device.stat }}"
+      when: i2c_device.stat.exists
+
+    - name: Create 'i2c' group
+      group:
+        name: i2c
+        state: present
+
+    - name: Change group of /dev/i2c-1 to 'i2c'
+      file:
+        path: /dev/i2c-1
+        group: i2c
+      when: i2c_device.stat.exists
+
+    - name: Set group read/write permissions on /dev/i2c-1
+      file:
+        path: /dev/i2c-1
+        mode: '0660'
+      when: i2c_device.stat.exists
+
+    - name: Add user to 'i2c' group
+      user:
+        name: "{{ target_user }}"
+        groups: i2c
+        append: yes
+
+    - name: Create udev rule for persistent I2C permissions
+      copy:
+        content: 'KERNEL=="i2c-[0-9]*", GROUP="i2c", MODE="0660"'
+        dest: /etc/udev/rules.d/10-local_i2c_group.rules
+        owner: root
+        group: root
+        mode: '0644'
+      notify:
+        - reload udev rules
+
+    - name: Display completion message
+      debug:
+        msg: "I2C setup complete. Please reboot or log out and back in for group changes to take effect."
+
+  handlers:
+    - name: reload udev rules
+      shell: |
+        udevadm control --reload-rules
+        udevadm trigger
