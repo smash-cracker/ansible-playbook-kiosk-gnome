@@ -1,0 +1,428 @@
+---
+- name: Deploy Just Perfection GNOME extension
+  hosts: install_targets
+  become: true
+
+  vars:
+    user_name: cezen
+    panels_to_disable:
+    - gnome-camera-panel.desktop
+    - gnome-color-panel.desktop
+    - gnome-default-apps-panel.desktop
+    - gnome-bluetooth-panel.desktop
+    - gnome-background-panel.desktop
+    - gnome-multitasking-panel.desktop
+    - gnome-sharing-panel.desktop
+    - gnome-applications-panel.desktop
+    - gnome-notifications-panel.desktop
+    - gnome-online-accounts-panel.desktop
+    - gnome-printers-panel.desktop
+    - gnome-region-panel.desktop
+    - gnome-removable-media-panel.desktop
+    - gnome-user-accounts-panel.desktop
+    - gnome-ubuntu-panel.desktop
+    - gnome-keyboard-panel.desktop
+    - gnome-mouse-panel.desktop
+# 
+    - gnome-usage-panel.desktop
+    - gnome-thunderbolt-panel.desktop
+    - gnome-location-panel.desktop
+    - gnome-diagnostics-panel.desktop
+    - gnome-connectivity-panel.desktop
+    - gnome-search-panel.desktop
+    - gnome-display-panel.desktop
+
+  tasks:
+    - name: Update package cache
+      apt:
+        update_cache: yes
+      retries: 3
+      delay: 10
+
+    - name: Upgrade all packages
+      apt:
+        upgrade: dist
+      retries: 3
+      delay: 10
+
+    - name: Install required packages
+      apt:
+        name:
+          - gettext
+          - gnome-shell-extension-manager
+          - libglib2.0-dev-bin
+          - libfuse2
+          - dconf-editor
+          - i2c-tools
+        state: present
+      retries: 3
+      delay: 10
+      register: apt_result
+      until: apt_result is succeeded
+
+    - name: Rename unwanted .desktop files
+      command: >
+        mv /usr/share/applications/{{ item }}
+           /usr/share/applications/{{ item }}.disabled
+      args:
+        creates: "/usr/share/applications/{{ item }}.disabled"
+      ignore_errors: true
+      loop: "{{ panels_to_disable }}"
+      register: rename_result
+
+    - name: Copy just perfection to remote host
+      copy:
+        src: ./assets/just-perfection-26.0.zip
+        dest: /home/{{ user_name }}/Documents/just-perfection-26.0.zip
+        owner: "{{ user_name }}"
+        group: "{{ user_name }}"
+        mode: '0664'
+  
+    - name: Copy just perfection to remote host
+      copy:
+        src: ./assets/disable-finger-gestures.com.zip
+        dest: /home/{{ user_name }}/Documents/disable-finger-gestures.com.zip
+        owner: "{{ user_name }}"
+        group: "{{ user_name }}"
+        mode: '0664'
+
+    - name: Extract just-perfection-26.0.zip
+      unarchive:
+        src: /home/{{ user_name }}/Documents/just-perfection-26.0.zip
+        dest: /home/{{ user_name }}/Documents/
+        owner: "{{ user_name }}"
+        group: "{{ user_name }}"
+        mode: '0775'
+        remote_src: yes
+    
+    - name: Install disable-gestures GNOME extension
+      command: gnome-extensions install /home/{{ user_name }}/Documents/disable-finger-gestures.com.zip
+      environment:
+        DISPLAY: ":0"
+        XDG_CURRENT_DESKTOP: "GNOME"
+        DBUS_SESSION_BUS_ADDRESS: "unix:path=/run/user/1000/bus"
+      become_user: "{{ user_name }}"
+      become: true
+
+    - name: Make build script executable
+      file:
+        path: /home/{{ user_name }}/Documents/just-perfection-26.0/scripts/build.sh
+        mode: '0755'
+        owner: "{{ user_name }}"
+        group: "{{ user_name }}"
+
+    - name: Run just-perfection build script
+      shell: ./scripts/build.sh -i
+      args:
+        chdir: /home/{{ user_name }}/Documents/just-perfection-26.0
+      become_user: "{{ user_name }}"
+      become: true
+
+    - name: Check if system-wide extension already exists
+      stat:
+        path: /usr/share/gnome-shell/extensions/just-perfection-desktop@just-perfection
+      register: extension_dir
+
+    - name: Move GNOME extension to system-wide directory
+      shell: |
+        mv /home/{{ user_name }}/.local/share/gnome-shell/extensions/just-perfection-desktop@just-perfection /usr/share/gnome-shell/extensions/
+      become: true
+      when: not extension_dir.stat.exists
+    
+    - name: Enable automatic login in GDM
+      blockinfile:
+        path: /etc/gdm3/custom.conf
+        marker: "# {mark} ANSIBLE MANAGED BLOCK"
+        block: |
+          [daemon]
+          AutomaticLoginEnable = true
+          AutomaticLogin = {{ user_name }}
+
+    - name: Disable Ubuntu release upgrade GUI prompt
+      lineinfile:
+        path: /etc/update-manager/release-upgrades
+        regexp: '^Prompt='
+        line: 'Prompt=never'
+        owner: root
+        group: root
+        mode: '0644'
+
+    - name: Disable Apport crash reporting (no more error popups)
+      lineinfile:
+        path: /etc/default/apport
+        regexp: '^enabled='
+        line: 'enabled=0'
+        owner: root
+        group: root
+        mode: '0644'
+
+    - name: Reboot the system
+      reboot:
+        msg: "Rebooting after GNOME extension installation"
+        reboot_timeout: 300
+
+    - name: Enable Just Perfection GNOME extension
+      command: gnome-extensions enable just-perfection-desktop@just-perfection
+      environment:
+        DISPLAY: ":0"
+        XDG_CURRENT_DESKTOP: "GNOME"
+        DBUS_SESSION_BUS_ADDRESS: "unix:path=/run/user/1000/bus"
+      become_user: "{{ user_name }}"
+      become: true
+
+    - name: Enable Disable Finger gestures GNOME extension
+      command: gnome-extensions enable disable-finger-gestures.com
+      environment:
+        DISPLAY: ":0"
+        XDG_CURRENT_DESKTOP: "GNOME"
+        DBUS_SESSION_BUS_ADDRESS: "unix:path=/run/user/1000/bus"
+      become_user: "{{ user_name }}"
+      # become: true
+
+    - name: Compile schemas in extension directory (first compilation)
+      command: glib-compile-schemas /usr/share/gnome-shell/extensions/just-perfection-desktop@just-perfection/schemas
+      become: true
+
+    - name: Copy gschema.xml files to global schemas directory
+      shell: cp /usr/share/gnome-shell/extensions/just-perfection-desktop@just-perfection/schemas/*.gschema.xml /usr/share/glib-2.0/schemas/
+      become: true
+
+    - name: Recompile global schemas (second compilation)
+      command: glib-compile-schemas /usr/share/glib-2.0/schemas/
+      become: true
+
+    - name: Apply GNOME settings using gsettings
+      command: "{{ item }}"
+      loop:
+        # Just perfection GNOME extension settings:
+        - gsettings set org.gnome.shell.extensions.just-perfection panel false
+        - gsettings set org.gnome.shell.extensions.just-perfection workspace-peek false
+        - gsettings set org.gnome.shell.extensions.just-perfection type-to-search false
+        - gsettings set org.gnome.shell.extensions.just-perfection overlay-key false
+        - gsettings set org.gnome.shell.extensions.just-perfection double-super-to-appgrid false
+        - gsettings set org.gnome.shell.extensions.just-perfection notification-banner-position 2
+        # Ding extension settings:
+        - gsettings set org.gnome.shell.extensions.ding show-trash false
+        # Dash to Dock settings:
+        - gsettings set org.gnome.shell.extensions.dash-to-dock show-trash false
+        - gsettings set org.gnome.shell.extensions.dash-to-dock show-mounts false
+        - gsettings set org.gnome.shell.extensions.dash-to-dock dock-fixed false
+        - gsettings set org.gnome.shell.extensions.dash-to-dock autohide false
+        # GNOME shell settings:
+        - gsettings set org.gnome.shell development-tools false
+        # GNOME desktop lockdown settings:
+        - gsettings set org.gnome.desktop.lockdown disable-user-switching true
+        - gsettings set org.gnome.desktop.lockdown disable-lock-screen true
+        # GNOME desktop window manager preferences:
+        - gsettings set org.gnome.desktop.wm.preferences action-double-click-titlebar 'none'
+        - gsettings set org.gnome.desktop.wm.preferences action-middle-click-titlebar 'none'
+        - gsettings set org.gnome.desktop.wm.preferences action-right-click-titlebar 'none'
+        - gsettings set org.gnome.desktop.wm.preferences button-layout ':close'
+        - gnome-extensions disable ubuntu-dock@ubuntu.com
+        # GNOME desktop screensaver settings:
+        - gsettings set org.gnome.desktop.screensaver ubuntu-lock-on-suspend false
+        # Miscallaneous settings:
+        - gsettings set com.ubuntu.SoftwareProperties ubuntu-pro-banner-visible false
+        - gsettings set org.gnome.desktop.notifications show-banners false
+        - gsettings set org.gnome.desktop.a11y.applications screen-keyboard-enabled true
+
+      environment:
+        DISPLAY: ":0"
+        XDG_CURRENT_DESKTOP: "GNOME"
+        DBUS_SESSION_BUS_ADDRESS: "unix:path=/run/user/1000/bus"
+      become_user: "{{ user_name }}"
+      become: true
+    
+    - name: Set up dconf profile to include system database
+      copy:
+        dest: /etc/dconf/profile/user
+        content: |
+          user-db:user
+          system-db:local
+    
+    - name: Create dconf local.d directory
+      file:
+        path: /etc/dconf/db/local.d
+        state: directory
+        mode: '0755'
+        owner: root
+        group: root
+
+    - name: Add default GNOME settings to system database
+      copy:
+        dest: /etc/dconf/db/local.d/00-extension-settings
+        content: |
+          [org/gnome/shell]
+          enabled-extensions=['just-perfection-desktop@just-perfection','disable-finger-gestures.com']
+          disabled-extensions=['ubuntu-dock@ubuntu.com']
+
+          [org/gnome/shell/extensions/just-perfection]
+          panel=false
+          workspace-peek=false
+          type-to-search=false
+          overlay-key=false
+          double-super-to-appgrid=false
+          notification-banner-position=2
+
+          [org/gnome/shell/extensions/dash-to-dock]
+          show-trash=false
+          show-mounts=false
+          dock-fixed=false
+          autohide=false
+
+          [org/gnome/shell/extensions/ding]
+          show-trash=false
+
+          [org/gnome/shell]
+          development-tools=false
+
+          [org/gnome/desktop/lockdown]
+          disable-user-switching=true
+
+          [org/gnome/desktop/wm/keybindings]
+          activate-window-menu=@as []
+          begin-move=@as []
+          begin-resize=@as []
+          close=@as []
+          cycle-group=@as []
+          cycle-group-backward=@as []
+          cycle-panels=@as []
+          cycle-panels-backward=@as []
+          cycle-windows=@as []
+          cycle-windows-backward=@as []
+          maximize=@as []
+          minimize=@as []
+          move-to-monitor-down=@as []
+          move-to-monitor-left=@as []
+          move-to-monitor-right=@as []
+          move-to-monitor-up=@as []
+          move-to-workspace-1=@as []
+          move-to-workspace-down=@as []
+          move-to-workspace-last=@as []
+          move-to-workspace-left=@as []
+          move-to-workspace-right=@as []
+          move-to-workspace-up=@as []
+          panel-main-menu=@as []
+          panel-run-dialog=@as []
+          show-desktop=@as []
+          switch-applications=@as []
+          switch-applications-backward=@as []
+          switch-group=@as []
+          switch-group-backward=@as []
+          switch-input-source=@as []
+          switch-input-source-backward=@as []
+          switch-panels=@as []
+          switch-panels-backward=@as []
+          switch-to-workspace-1=@as []
+          switch-to-workspace-down=@as []
+          switch-to-workspace-last=@as []
+          switch-to-workspace-left=@as []
+          switch-to-workspace-right=@as []
+          switch-to-workspace-up=@as []
+          switch-windows=@as []
+          switch-windows-backward=@as []
+          toggle-maximized=@as []
+          unmaximize=@as []
+
+          [org/gnome/desktop/wm/preferences]
+          action-double-click-titlebar='none'
+          action-middle-click-titlebar='none'
+          action-right-click-titlebar='none'
+          button-layout=':close'
+
+    - name: Create dconf locks directory
+      file:
+        path: /etc/dconf/db/local.d/locks
+        state: directory
+        mode: '0755'
+        owner: root
+        group: root
+
+    - name: Lock the GNOME settings to prevent user overrides
+      copy:
+        dest: /etc/dconf/db/local.d/locks/00-extension-settings
+        content: |
+          /org/gnome/shell/enabled-extensions
+          /org/gnome/shell/extensions/just-perfection/panel
+          /org/gnome/shell/extensions/just-perfection/workspace-peek
+          /org/gnome/shell/extensions/just-perfection/type-to-search
+          /org/gnome/shell/extensions/just-perfection/overlay-key
+          /org/gnome/shell/extensions/just-perfection/double-super-to-appgrid
+          /org/gnome/shell/extensions/just-perfection/notification-banner-position
+          /org/gnome/shell/extensions/dash-to-dock/show-trash
+          /org/gnome/shell/extensions/dash-to-dock/show-mounts
+          /org/gnome/shell/extensions/dash-to-dock/dock-fixed
+          /org/gnome/shell/extensions/dash-to-dock/app-hotkey-1
+          /org/gnome/shell/extensions/dash-to-dock/app-hotkey-2
+          /org/gnome/shell/extensions/dash-to-dock/app-hotkey-3
+          /org/gnome/shell/extensions/dash-to-dock/app-hotkey-4
+          /org/gnome/shell/extensions/dash-to-dock/app-hotkey-5
+          /org/gnome/shell/extensions/dash-to-dock/app-hotkey-6
+          /org/gnome/shell/extensions/dash-to-dock/app-hotkey-7
+          /org/gnome/shell/extensions/dash-to-dock/app-hotkey-8
+          /org/gnome/shell/extensions/dash-to-dock/app-hotkey-9
+          /org/gnome/shell/extensions/dash-to-dock/app-hotkey-10
+          /org/gnome/shell/extensions/dash-to-dock/app-shift-hotkey-1
+          /org/gnome/shell/extensions/dash-to-dock/app-shift-hotkey-2
+          /org/gnome/shell/extensions/dash-to-dock/app-shift-hotkey-3
+          /org/gnome/shell/extensions/dash-to-dock/app-shift-hotkey-4
+          /org/gnome/shell/extensions/dash-to-dock/app-shift-hotkey-5
+          /org/gnome/shell/extensions/dash-to-dock/app-shift-hotkey-6
+          /org/gnome/shell/extensions/dash-to-dock/app-shift-hotkey-7
+          /org/gnome/shell/extensions/dash-to-dock/app-shift-hotkey-8
+          /org/gnome/shell/extensions/dash-to-dock/app-shift-hotkey-9
+          /org/gnome/shell/extensions/dash-to-dock/app-shift-hotkey-10
+          /org/gnome/shell/extensions/dash-to-dock/autohide
+          /org/gnome/shell/extensions/ding/show-trash
+          /org/gnome/shell/development-tools
+          /org/gnome/desktop/lockdown/disable-user-switching
+          /org/gnome/desktop/wm/keybindings/activate-window-menu
+          /org/gnome/desktop/wm/keybindings/begin-move
+          /org/gnome/desktop/wm/keybindings/begin-resize
+          /org/gnome/desktop/wm/keybindings/close
+          /org/gnome/desktop/wm/keybindings/cycle-group
+          /org/gnome/desktop/wm/keybindings/cycle-group-backward
+          /org/gnome/desktop/wm/keybindings/cycle-panels
+          /org/gnome/desktop/wm/keybindings/cycle-panels-backward
+          /org/gnome/desktop/wm/keybindings/cycle-windows
+          /org/gnome/desktop/wm/keybindings/cycle-windows-backward
+          /org/gnome/desktop/wm/keybindings/maximize
+          /org/gnome/desktop/wm/keybindings/minimize
+          /org/gnome/desktop/wm/keybindings/move-to-monitor-down
+          /org/gnome/desktop/wm/keybindings/move-to-monitor-left
+          /org/gnome/desktop/wm/keybindings/move-to-monitor-right
+          /org/gnome/desktop/wm/keybindings/move-to-monitor-up
+          /org/gnome/desktop/wm/keybindings/move-to-workspace-1
+          /org/gnome/desktop/wm/keybindings/move-to-workspace-down
+          /org/gnome/desktop/wm/keybindings/move-to-workspace-last
+          /org/gnome/desktop/wm/keybindings/move-to-workspace-left
+          /org/gnome/desktop/wm/keybindings/move-to-workspace-right
+          /org/gnome/desktop/wm/keybindings/move-to-workspace-up
+          /org/gnome/desktop/wm/keybindings/panel-main-menu
+          /org/gnome/desktop/wm/keybindings/panel-run-dialog
+          /org/gnome/desktop/wm/keybindings/show-desktop
+          /org/gnome/desktop/wm/keybindings/switch-applications
+          /org/gnome/desktop/wm/keybindings/switch-applications-backward
+          /org/gnome/desktop/wm/keybindings/switch-group
+          /org/gnome/desktop/wm/keybindings/switch-group-backward
+          /org/gnome/desktop/wm/keybindings/switch-input-source
+          /org/gnome/desktop/wm/keybindings/switch-input-source-backward
+          /org/gnome/desktop/wm/keybindings/switch-panels
+          /org/gnome/desktop/wm/keybindings/switch-panels-backward
+          /org/gnome/desktop/wm/keybindings/switch-to-workspace-1
+          /org/gnome/desktop/wm/keybindings/switch-to-workspace-down
+          /org/gnome/desktop/wm/keybindings/switch-to-workspace-last
+          /org/gnome/desktop/wm/keybindings/switch-to-workspace-left
+          /org/gnome/desktop/wm/keybindings/switch-to-workspace-right
+          /org/gnome/desktop/wm/keybindings/switch-to-workspace-up
+          /org/gnome/desktop/wm/keybindings/switch-windows
+          /org/gnome/desktop/wm/keybindings/switch-windows-backward
+          /org/gnome/desktop/wm/keybindings/toggle-maximized
+          /org/gnome/desktop/wm/keybindings/unmaximize
+          /org/gnome/desktop/wm/preferences/action-double-click-titlebar
+          /org/gnome/desktop/wm/preferences/action-middle-click-titlebar
+          /org/gnome/desktop/wm/preferences/action-right-click-titlebar
+          /org/gnome/desktop/wm/preferences/button-layout
+
+    - name: Update dconf system database
+      command: dconf update
