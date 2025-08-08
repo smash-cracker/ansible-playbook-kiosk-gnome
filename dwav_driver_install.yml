@@ -1,0 +1,98 @@
+---
+- name: Install DWAV USB Multi-Touch Driver
+  hosts: install_targets
+  become: true
+
+  vars:
+    driver_name: "dwav-usb-mt"
+    driver_version: "1.0.0"
+    src_dir: "{{ driver_name }}-{{ driver_version }}"
+    dkms_dir: "/usr/src/{{ src_dir }}"
+    grub_file: "/etc/default/grub"
+    quirks_option: 'usbhid.quirks=0x16b4:0x0704:0x04,0x16b4:0x0705:0x04'
+
+  tasks:
+    - name: Install build dependencies
+      apt:
+        name:
+          - build-essential
+          - dkms
+        state: present
+        update_cache: yes
+
+    - name: Remove existing DKMS module (if any)
+      shell: dkms remove -m "{{ driver_name }}" -v "{{ driver_version }}" --all
+      ignore_errors: true
+      register: dkms_remove_result
+
+    - name: Check if source directory exists
+      stat:
+        path: "{{ src_dir }}"
+      register: src_dir_stat
+
+    - name: Fail if source directory not found
+      fail:
+        msg: "Source directory {{ src_dir }} not found. Exiting."
+      when: not src_dir_stat.stat.exists
+
+    - name: Copy driver to DKMS source directory
+      copy:
+        src: "{{ src_dir }}/"
+        dest: "{{ dkms_dir }}/"
+        remote_src: false
+        mode: preserve
+
+    - name: Add driver to DKMS
+      shell: dkms add -m "{{ driver_name }}" -v "{{ driver_version }}"
+      register: dkms_add_result
+
+    - name: Build driver with DKMS
+      shell: dkms build -m "{{ driver_name }}" -v "{{ driver_version }}"
+      register: dkms_build_result
+
+    - name: Install driver with DKMS
+      shell: dkms install -m "{{ driver_name }}" -v "{{ driver_version }}"
+      register: dkms_install_result
+
+    - name: Check current USB HID quirks
+      shell: cat /sys/module/usbhid/parameters/quirks || echo ""
+      register: current_quirks
+      changed_when: false
+
+    - name: Check if quirks already configured
+      set_fact:
+        quirks_configured: "{{ '0x16b4:0x0704:0x04,0x16b4:0x0705:0x04' in current_quirks.stdout }}"
+
+    - name: Display quirks status
+      debug:
+        msg: "USB HID quirks already configured. No changes needed."
+      when: quirks_configured
+
+    - name: Check if quirks option already in GRUB
+      shell: grep -q "{{ quirks_option }}" "{{ grub_file }}"
+      register: grub_check
+      ignore_errors: true
+      changed_when: false
+      when: not quirks_configured
+
+    - name: Add USB HID quirks to GRUB
+      lineinfile:
+        path: "{{ grub_file }}"
+        regexp: '^(GRUB_CMDLINE_LINUX="[^"]*)"'
+        line: '\1 {{ quirks_option }}"'
+        backrefs: yes
+      when: not quirks_configured and grub_check.rc != 0
+      register: grub_updated
+
+    - name: Update GRUB
+      shell: update-grub
+      when: grub_updated is changed
+
+    - name: Display completion message
+      debug:
+        msg: "Driver installation and configuration completed successfully!"
+
+    - name: Display reboot message
+      debug:
+        msg: "Please reboot your system for changes to take effect."
+      when: grub_updated is changed
