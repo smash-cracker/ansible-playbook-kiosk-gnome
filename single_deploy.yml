@@ -1,0 +1,81 @@
+---
+- name: Deploy Just Perfection GNOME extension
+  hosts: install_targets
+  become: true
+
+  vars:
+    user_name: cezen
+    panels_to_disable:
+    - gnome-camera-panel.desktop
+    - gnome-color-panel.desktop
+    - gnome-default-apps-panel.desktop
+    - gnome-bluetooth-panel.desktop
+    - gnome-background-panel.desktop
+    - gnome-multitasking-panel.desktop
+    - gnome-sharing-panel.desktop
+    - gnome-applications-panel.desktop
+    - gnome-notifications-panel.desktop
+    - gnome-online-accounts-panel.desktop
+    - gnome-printers-panel.desktop
+    - gnome-region-panel.desktop
+    - gnome-removable-media-panel.desktop
+    - gnome-user-accounts-panel.desktop
+    - gnome-ubuntu-panel.desktop
+    - gnome-keyboard-panel.desktop
+    - gnome-mouse-panel.desktop
+# 
+    - gnome-usage-panel.desktop
+    - gnome-thunderbolt-panel.desktop
+    - gnome-location-panel.desktop
+    - gnome-diagnostics-panel.desktop
+    - gnome-connectivity-panel.desktop
+    - gnome-search-panel.desktop
+    - gnome-display-panel.desktop
+
+  tasks:
+    - name: Apply GNOME settings using gsettings
+      command: "{{ item }}"
+      loop:
+        # Just perfection GNOME extension settings:
+        - gsettings set org.gnome.shell.extensions.just-perfection panel false
+        - gsettings set org.gnome.shell.extensions.just-perfection workspace-peek false
+        - gsettings set org.gnome.shell.extensions.just-perfection type-to-search false
+        - gsettings set org.gnome.shell.extensions.just-perfection overlay-key false
+        - gsettings set org.gnome.shell.extensions.just-perfection double-super-to-appgrid false
+        - gsettings set org.gnome.shell.extensions.just-perfection notification-banner-position 2
+        # Ding extension settings:
+        - gsettings set org.gnome.shell.extensions.ding show-trash false
+        # Dash to Dock settings:
+        - gsettings set org.gnome.shell.extensions.dash-to-dock show-trash false
+        - gsettings set org.gnome.shell.extensions.dash-to-dock show-mounts false
+        - gsettings set org.gnome.shell.extensions.dash-to-dock dock-fixed false
+        - gsettings set org.gnome.shell.extensions.dash-to-dock autohide false
+        # GNOME shell settings:
+        - gsettings set org.gnome.shell development-tools false
+        # GNOME desktop lockdown settings:
+        - gsettings set org.gnome.desktop.lockdown disable-user-switching true
+        - gsettings set org.gnome.desktop.lockdown disable-lock-screen true
+        # GNOME desktop window manager preferences:
+        - gsettings set org.gnome.desktop.wm.preferences action-double-click-titlebar 'none'
+        - gsettings set org.gnome.desktop.wm.preferences action-middle-click-titlebar 'none'
+        - gsettings set org.gnome.desktop.wm.preferences action-right-click-titlebar 'none'
+        - gsettings set org.gnome.desktop.wm.preferences button-layout ':close'
+        - gnome-extensions disable ubuntu-dock@ubuntu.com
+        # GNOME desktop screensaver settings:
+        - gsettings set org.gnome.desktop.screensaver ubuntu-lock-on-suspend false
+        # Miscallaneous settings:
+        - gsettings set com.ubuntu.SoftwareProperties ubuntu-pro-banner-visible false
+        - gsettings set org.gnome.desktop.notifications show-banners false
+        - gsettings set org.gnome.desktop.a11y.applications screen-keyboard-enabled true
+
+        - gsettings set org.gnome.desktop.session idle-delay 0
+        - gsettings set org.gnome.settings-daemon.plugins.power sleep-inactive-ac-type 'nothing'
+        - gsettings set org.gnome.settings-daemon.plugins.power sleep-inactive-battery-type 'nothing'
+        - gsettings set org.gnome.settings-daemon.plugins.power power-saver-profile-on-low-battery false
+
+      environment:
+        DISPLAY: ":0"
+        XDG_CURRENT_DESKTOP: "GNOME"
+        DBUS_SESSION_BUS_ADDRESS: "unix:path=/run/user/1000/bus"
+      become_user: "{{ user_name }}"
+      become: true

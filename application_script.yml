@@ -4,7 +4,7 @@
   become: true
   vars:
     user_name: cezen
-    appimage_name: voip-x86_64_v1.4.6.AppImage
+    appimage_name: voip-x86_64_v1.4.7.AppImage
     appimage_path: /home/{{ user_name }}/Applications/{{ appimage_name }}
     desktop_file_path: /home/{{ user_name }}/.config/autostart/voip.desktop
     systemd_user_dir: /home/{{ user_name }}/.config/systemd/user
@@ -27,29 +27,29 @@
         owner: "{{ user_name }}"
         group: "{{ user_name }}"
 
-    - name: Create autostart config directory
-      file:
-        path: /home/{{ user_name }}/.config/autostart
-        state: directory
-        mode: '0755'
-        owner: "{{ user_name }}"
-        group: "{{ user_name }}"
+    # - name: Create autostart config directory
+    #   file:
+    #     path: /home/{{ user_name }}/.config/autostart
+    #     state: directory
+    #     mode: '0755'
+    #     owner: "{{ user_name }}"
+    #     group: "{{ user_name }}"
 
-    - name: Create .desktop file to run AppImage at startup
-      copy:
-        dest: "{{ desktop_file_path }}"
-        content: |
-          [Desktop Entry]
-          Type=Application
-          Exec={{ appimage_path }}
-          Hidden=false
-          NoDisplay=false
-          X-GNOME-Autostart-enabled=true
-          Name=CVoIP
-          Comment=Start CVoIP App on login
-        mode: '0644'
-        owner: "{{ user_name }}"
-        group: "{{ user_name }}"
+    # - name: Create .desktop file to run AppImage at startup
+    #   copy:
+    #     dest: "{{ desktop_file_path }}"
+    #     content: |
+    #       [Desktop Entry]
+    #       Type=Application
+    #       Exec={{ appimage_path }}
+    #       Hidden=false
+    #       NoDisplay=false
+    #       X-GNOME-Autostart-enabled=true
+    #       Name=CVoIP
+    #       Comment=Start CVoIP App on login
+    #     mode: '0644'
+    #     owner: "{{ user_name }}"
+    #     group: "{{ user_name }}"
 
     - name: Ensure systemd user unit directory exists
       file:
