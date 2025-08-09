@@ -44,6 +44,15 @@
         state: present
         update_cache: yes
 
+    - name: Configure inputrc to disable bell
+      lineinfile:
+        path: /home/{{ user_name }}/.inputrc
+        line: 'set bell-style none'
+        create: yes
+        owner: "{{ user_name }}"
+        group: "{{ user_name }}"
+        mode: '0644'
+
     - name: Rename unwanted .desktop files
       command: >
         mv /usr/share/applications/{{ item }}
