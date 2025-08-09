@@ -4,7 +4,7 @@
   become: true
   vars:
     user_name: cezen
-    appimage_name: voip-x86_64_v1.4.7.AppImage
+    appimage_name: voip-x86_64_v1.4.9.AppImage
     appimage_path: /home/{{ user_name }}/Applications/{{ appimage_name }}
     desktop_file_path: /home/{{ user_name }}/.config/autostart/voip.desktop
     systemd_user_dir: /home/{{ user_name }}/.config/systemd/user
@@ -27,65 +27,65 @@
         owner: "{{ user_name }}"
         group: "{{ user_name }}"
 
-    # - name: Create autostart config directory
-    #   file:
-    #     path: /home/{{ user_name }}/.config/autostart
-    #     state: directory
-    #     mode: '0755'
-    #     owner: "{{ user_name }}"
-    #     group: "{{ user_name }}"
-
-    # - name: Create .desktop file to run AppImage at startup
-    #   copy:
-    #     dest: "{{ desktop_file_path }}"
-    #     content: |
-    #       [Desktop Entry]
-    #       Type=Application
-    #       Exec={{ appimage_path }}
-    #       Hidden=false
-    #       NoDisplay=false
-    #       X-GNOME-Autostart-enabled=true
-    #       Name=CVoIP
-    #       Comment=Start CVoIP App on login
-    #     mode: '0644'
-    #     owner: "{{ user_name }}"
-    #     group: "{{ user_name }}"
-
-    - name: Ensure systemd user unit directory exists
+    - name: Create autostart config directory
       file:
-        path: "{{ systemd_user_dir }}"
+        path: /home/{{ user_name }}/.config/autostart
         state: directory
         mode: '0755'
         owner: "{{ user_name }}"
         group: "{{ user_name }}"
 
-    - name: Deploy voip.service user unit
+    - name: Create .desktop file to run AppImage at startup
       copy:
-        dest: "{{ systemd_user_dir }}/{{ service_unit }}"
+        dest: "{{ desktop_file_path }}"
         content: |
-          [Unit]
-          Description=Auto-restart VoIP AppImage
-
-          [Service]
-          ExecStart={{ appimage_path }}
-          Restart=always
-          RestartSec=5
-
-          [Install]
-          WantedBy=default.target
+          [Desktop Entry]
+          Type=Application
+          Exec={{ appimage_path }}
+          Hidden=false
+          NoDisplay=false
+          X-GNOME-Autostart-enabled=true
+          Name=CVoIP
+          Comment=Start CVoIP App on login
         mode: '0644'
         owner: "{{ user_name }}"
         group: "{{ user_name }}"
 
-    - name: Reload and enable user service (as cezen)
-      become: false
-      become_user: "{{ user_name }}"
-      shell: |
-        systemctl --user daemon-reload
-        systemctl --user enable {{ service_unit }}
-        systemctl --user start {{ service_unit }}
-      args:
-        executable: /bin/bash
+    # - name: Ensure systemd user unit directory exists
+    #   file:
+    #     path: "{{ systemd_user_dir }}"
+    #     state: directory
+    #     mode: '0755'
+    #     owner: "{{ user_name }}"
+    #     group: "{{ user_name }}"
+
+    # - name: Deploy voip.service user unit
+    #   copy:
+    #     dest: "{{ systemd_user_dir }}/{{ service_unit }}"
+    #     content: |
+    #       [Unit]
+    #       Description=Auto-restart VoIP AppImage
+
+    #       [Service]
+    #       ExecStart={{ appimage_path }}
+    #       Restart=always
+    #       RestartSec=5
+
+    #       [Install]
+    #       WantedBy=default.target
+    #     mode: '0644'
+    #     owner: "{{ user_name }}"
+    #     group: "{{ user_name }}"
+
+    # - name: Reload and enable user service (as cezen)
+    #   become: false
+    #   become_user: "{{ user_name }}"
+    #   shell: |
+    #     systemctl --user daemon-reload
+    #     systemctl --user enable {{ service_unit }}
+    #     systemctl --user start {{ service_unit }}
+    #   args:
+    #     executable: /bin/bash
 
     - name: Reboot the system
       reboot:

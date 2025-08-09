@@ -41,12 +41,8 @@
           - libglib2.0-dev-bin
           - libfuse2
           - dconf-editor
-          - i2c-tools
         state: present
-      retries: 3
-      delay: 10
-      register: apt_result
-      until: apt_result is succeeded
+        update_cache: yes
 
     - name: Rename unwanted .desktop files
       command: >
@@ -58,6 +54,12 @@
       loop: "{{ panels_to_disable }}"
       register: rename_result
 
+    # - name: Set permissions to 000 on disabled desktop files
+    #   file:
+    #     path: "/usr/share/applications/{{ item }}.disabled"
+    #     mode: '0000'
+    #   loop: "{{ panels_to_disable }}"
+    #   when: "rename_result.results[loop.index0] is not skipped"
     - name: Copy just perfection to remote host
       copy:
         src: ./assets/just-perfection-26.0.zip
@@ -84,7 +86,7 @@
         remote_src: yes
     
     - name: Install disable-gestures GNOME extension
-      command: gnome-extensions install /home/{{ user_name }}/Documents/disable-finger-gestures.com.zip
+      command: gnome-extensions install --force /home/{{ user_name }}/Documents/disable-finger-gestures.com.zip
       environment:
         DISPLAY: ":0"
         XDG_CURRENT_DESKTOP: "GNOME"
@@ -185,8 +187,8 @@
         # Just perfection GNOME extension settings:
         - gsettings set org.gnome.shell.extensions.just-perfection panel false
         - gsettings set org.gnome.shell.extensions.just-perfection workspace-peek false
-        - gsettings set org.gnome.shell.extensions.just-perfection type-to-search false
-        - gsettings set org.gnome.shell.extensions.just-perfection overlay-key false
+        - gsettings set org.gnome.shell.extensions.just-perfection type-to-search true
+        - gsettings set org.gnome.shell.extensions.just-perfection overlay-key true
         - gsettings set org.gnome.shell.extensions.just-perfection double-super-to-appgrid false
         - gsettings set org.gnome.shell.extensions.just-perfection notification-banner-position 2
         # Ding extension settings:
@@ -195,12 +197,86 @@
         - gsettings set org.gnome.shell.extensions.dash-to-dock show-trash false
         - gsettings set org.gnome.shell.extensions.dash-to-dock show-mounts false
         - gsettings set org.gnome.shell.extensions.dash-to-dock dock-fixed false
+        - gsettings set org.gnome.shell.extensions.dash-to-dock app-ctrl-hotkey-1 "[]"
+        - gsettings set org.gnome.shell.extensions.dash-to-dock app-ctrl-hotkey-2 "[]"
+        - gsettings set org.gnome.shell.extensions.dash-to-dock app-ctrl-hotkey-3 "[]"
+        - gsettings set org.gnome.shell.extensions.dash-to-dock app-ctrl-hotkey-4 "[]"
+        - gsettings set org.gnome.shell.extensions.dash-to-dock app-ctrl-hotkey-5 "[]"
+        - gsettings set org.gnome.shell.extensions.dash-to-dock app-ctrl-hotkey-6 "[]"
+        - gsettings set org.gnome.shell.extensions.dash-to-dock app-ctrl-hotkey-7 "[]"
+        - gsettings set org.gnome.shell.extensions.dash-to-dock app-ctrl-hotkey-8 "[]"
+        - gsettings set org.gnome.shell.extensions.dash-to-dock app-ctrl-hotkey-9 "[]"
+        - gsettings set org.gnome.shell.extensions.dash-to-dock app-ctrl-hotkey-10 "[]"
+        - gsettings set org.gnome.shell.extensions.dash-to-dock app-hotkey-1 "[]"
+        - gsettings set org.gnome.shell.extensions.dash-to-dock app-hotkey-2 "[]"
+        - gsettings set org.gnome.shell.extensions.dash-to-dock app-hotkey-3 "[]"
+        - gsettings set org.gnome.shell.extensions.dash-to-dock app-hotkey-4 "[]"
+        - gsettings set org.gnome.shell.extensions.dash-to-dock app-hotkey-5 "[]"
+        - gsettings set org.gnome.shell.extensions.dash-to-dock app-hotkey-6 "[]"
+        - gsettings set org.gnome.shell.extensions.dash-to-dock app-hotkey-7 "[]"
+        - gsettings set org.gnome.shell.extensions.dash-to-dock app-hotkey-8 "[]"
+        - gsettings set org.gnome.shell.extensions.dash-to-dock app-hotkey-9 "[]"
+        - gsettings set org.gnome.shell.extensions.dash-to-dock app-hotkey-10 "[]"
+        - gsettings set org.gnome.shell.extensions.dash-to-dock app-shift-hotkey-1 "[]"
+        - gsettings set org.gnome.shell.extensions.dash-to-dock app-shift-hotkey-2 "[]"
+        - gsettings set org.gnome.shell.extensions.dash-to-dock app-shift-hotkey-3 "[]"
+        - gsettings set org.gnome.shell.extensions.dash-to-dock app-shift-hotkey-4 "[]"
+        - gsettings set org.gnome.shell.extensions.dash-to-dock app-shift-hotkey-5 "[]"
+        - gsettings set org.gnome.shell.extensions.dash-to-dock app-shift-hotkey-6 "[]"
+        - gsettings set org.gnome.shell.extensions.dash-to-dock app-shift-hotkey-7 "[]"
+        - gsettings set org.gnome.shell.extensions.dash-to-dock app-shift-hotkey-8 "[]"
+        - gsettings set org.gnome.shell.extensions.dash-to-dock app-shift-hotkey-9 "[]"
+        - gsettings set org.gnome.shell.extensions.dash-to-dock app-shift-hotkey-10 "[]"
         - gsettings set org.gnome.shell.extensions.dash-to-dock autohide false
         # GNOME shell settings:
         - gsettings set org.gnome.shell development-tools false
         # GNOME desktop lockdown settings:
         - gsettings set org.gnome.desktop.lockdown disable-user-switching true
         - gsettings set org.gnome.desktop.lockdown disable-lock-screen true
+        # GNOME desktop window manager keybindings:
+        - gsettings set org.gnome.desktop.wm.keybindings activate-window-menu "[]"
+        - gsettings set org.gnome.desktop.wm.keybindings begin-move "[]"
+        - gsettings set org.gnome.desktop.wm.keybindings begin-resize "[]"
+        - gsettings set org.gnome.desktop.wm.keybindings close "[]"
+        - gsettings set org.gnome.desktop.wm.keybindings cycle-group "[]"
+        - gsettings set org.gnome.desktop.wm.keybindings cycle-group-backward "[]"
+        - gsettings set org.gnome.desktop.wm.keybindings cycle-panels "[]"
+        - gsettings set org.gnome.desktop.wm.keybindings cycle-panels-backward "[]"
+        - gsettings set org.gnome.desktop.wm.keybindings cycle-windows "[]"
+        - gsettings set org.gnome.desktop.wm.keybindings cycle-windows-backward "[]"
+        - gsettings set org.gnome.desktop.wm.keybindings maximize "[]"
+        - gsettings set org.gnome.desktop.wm.keybindings minimize "[]"
+        - gsettings set org.gnome.desktop.wm.keybindings move-to-monitor-down "[]"
+        - gsettings set org.gnome.desktop.wm.keybindings move-to-monitor-left "[]"
+        - gsettings set org.gnome.desktop.wm.keybindings move-to-monitor-right "[]"
+        - gsettings set org.gnome.desktop.wm.keybindings move-to-monitor-up "[]"
+        - gsettings set org.gnome.desktop.wm.keybindings move-to-workspace-1 "[]"
+        - gsettings set org.gnome.desktop.wm.keybindings move-to-workspace-down "[]"
+        - gsettings set org.gnome.desktop.wm.keybindings move-to-workspace-last "[]"
+        - gsettings set org.gnome.desktop.wm.keybindings move-to-workspace-left "[]"
+        - gsettings set org.gnome.desktop.wm.keybindings move-to-workspace-right "[]"
+        - gsettings set org.gnome.desktop.wm.keybindings move-to-workspace-up "[]"
+        - gsettings set org.gnome.desktop.wm.keybindings panel-main-menu "[]"
+        - gsettings set org.gnome.desktop.wm.keybindings panel-run-dialog "[]"
+        - gsettings set org.gnome.desktop.wm.keybindings show-desktop "[]"
+        # - gsettings set org.gnome.desktop.wm.keybindings switch-applications "[]"
+        - gsettings set org.gnome.desktop.wm.keybindings switch-applications-backward "[]"
+        - gsettings set org.gnome.desktop.wm.keybindings switch-group "[]"
+        - gsettings set org.gnome.desktop.wm.keybindings switch-group-backward "[]"
+        - gsettings set org.gnome.desktop.wm.keybindings switch-input-source "[]"
+        - gsettings set org.gnome.desktop.wm.keybindings switch-input-source-backward "[]"
+        - gsettings set org.gnome.desktop.wm.keybindings switch-panels "[]"
+        - gsettings set org.gnome.desktop.wm.keybindings switch-panels-backward "[]"
+        - gsettings set org.gnome.desktop.wm.keybindings switch-to-workspace-1 "[]"
+        - gsettings set org.gnome.desktop.wm.keybindings switch-to-workspace-down "[]"
+        - gsettings set org.gnome.desktop.wm.keybindings switch-to-workspace-last "[]"
+        - gsettings set org.gnome.desktop.wm.keybindings switch-to-workspace-left "[]"
+        - gsettings set org.gnome.desktop.wm.keybindings switch-to-workspace-right "[]"
+        - gsettings set org.gnome.desktop.wm.keybindings switch-to-workspace-up "[]"
+        - gsettings set org.gnome.desktop.wm.keybindings switch-windows "[]"
+        - gsettings set org.gnome.desktop.wm.keybindings switch-windows-backward "[]"
+        - gsettings set org.gnome.desktop.wm.keybindings toggle-maximized "[]"
+        - gsettings set org.gnome.desktop.wm.keybindings unmaximize "[]"
         # GNOME desktop window manager preferences:
         - gsettings set org.gnome.desktop.wm.preferences action-double-click-titlebar 'none'
         - gsettings set org.gnome.desktop.wm.preferences action-middle-click-titlebar 'none'
@@ -213,12 +289,36 @@
         - gsettings set com.ubuntu.SoftwareProperties ubuntu-pro-banner-visible false
         - gsettings set org.gnome.desktop.notifications show-banners false
         - gsettings set org.gnome.desktop.a11y.applications screen-keyboard-enabled true
+        # GNOME Final Settings
+        # - gsettings set org.gnome.settings-daemon.plugins.media-keys terminal "[]" 
+        # - gsettings set org.gnome.settings-daemon.plugins.media-keys help "[]" 
+        # - gsettings set org.gnome.mutter.wayland.keybindings switch-to-session-1 "[]" 
+        # - gsettings set org.gnome.mutter.wayland.keybindings switch-to-session-2 "[]" 
+        # - gsettings set org.gnome.mutter.wayland.keybindings switch-to-session-3 "[]" 
+        # - gsettings set org.gnome.mutter.wayland.keybindings switch-to-session-4 "[]" 
+        # - gsettings set org.gnome.mutter.wayland.keybindings switch-to-session-5 "[]" 
+        # - gsettings set org.gnome.mutter.wayland.keybindings switch-to-session-6 "[]" 
+        # - gsettings set org.gnome.mutter.wayland.keybindings switch-to-session-7 "[]" 
+        # - gsettings set org.gnome.mutter.wayland.keybindings switch-to-session-8 "[]" 
+        # - gsettings set org.gnome.mutter.wayland.keybindings switch-to-session-9 "[]" 
+        # - gsettings set org.gnome.mutter.wayland.keybindings switch-to-session-9 "[]" 
+        # - gsettings set org.gnome.mutter.wayland.keybindings restore-shortcuts "[]" 
+    
+        # [org/gnome/settings-daemon/plugins/media-keys]
+        # terminal=@as []
+        # help=@as []
 
-        - gsettings set org.gnome.desktop.session idle-delay 0
-        - gsettings set org.gnome.settings-daemon.plugins.power sleep-inactive-ac-type 'nothing'
-        - gsettings set org.gnome.settings-daemon.plugins.power sleep-inactive-battery-type 'nothing'
-        - gsettings set org.gnome.settings-daemon.plugins.power power-saver-profile-on-low-battery false
-
+        # [org/gnome/mutter/wayland/keybindings]
+        # switch-to-session-1=@as []
+        # switch-to-session-2=@as []
+        # switch-to-session-3=@as []
+        # switch-to-session-4=@as []
+        # switch-to-session-5=@as []
+        # switch-to-session-6=@as []
+        # switch-to-session-7=@as []
+        # switch-to-session-8=@as []
+        # switch-to-session-9=@as []
+        # restore-shortcuts=@as []
       environment:
         DISPLAY: ":0"
         XDG_CURRENT_DESKTOP: "GNOME"
@@ -252,8 +352,8 @@
           [org/gnome/shell/extensions/just-perfection]
           panel=false
           workspace-peek=false
-          type-to-search=false
-          overlay-key=false
+          type-to-search=true
+          overlay-key=true
           double-super-to-appgrid=false
           notification-banner-position=2
 
@@ -261,6 +361,36 @@
           show-trash=false
           show-mounts=false
           dock-fixed=false
+          app-ctrl-hotkey-1=@as []
+          app-ctrl-hotkey-2=@as []
+          app-ctrl-hotkey-3=@as []
+          app-ctrl-hotkey-4=@as []
+          app-ctrl-hotkey-5=@as []
+          app-ctrl-hotkey-6=@as []
+          app-ctrl-hotkey-7=@as []
+          app-ctrl-hotkey-8=@as []
+          app-ctrl-hotkey-9=@as []
+          app-ctrl-hotkey-10=@as []
+          app-hotkey-1=@as []
+          app-hotkey-2=@as []
+          app-hotkey-3=@as []
+          app-hotkey-4=@as []
+          app-hotkey-5=@as []
+          app-hotkey-6=@as []
+          app-hotkey-7=@as []
+          app-hotkey-8=@as []
+          app-hotkey-9=@as []
+          app-hotkey-10=@as []
+          app-shift-hotkey-1=@as []
+          app-shift-hotkey-2=@as []
+          app-shift-hotkey-3=@as []
+          app-shift-hotkey-4=@as []
+          app-shift-hotkey-5=@as []
+          app-shift-hotkey-6=@as []
+          app-shift-hotkey-7=@as []
+          app-shift-hotkey-8=@as []
+          app-shift-hotkey-9=@as []
+          app-shift-hotkey-10=@as []
           autohide=false
 
           [org/gnome/shell/extensions/ding]
@@ -298,7 +428,6 @@
           panel-main-menu=@as []
           panel-run-dialog=@as []
           show-desktop=@as []
-          switch-applications=@as []
           switch-applications-backward=@as []
           switch-group=@as []
           switch-group-backward=@as []
@@ -345,6 +474,16 @@
           /org/gnome/shell/extensions/dash-to-dock/show-trash
           /org/gnome/shell/extensions/dash-to-dock/show-mounts
           /org/gnome/shell/extensions/dash-to-dock/dock-fixed
+          /org/gnome/shell/extensions/dash-to-dock/app-ctrl-hotkey-1
+          /org/gnome/shell/extensions/dash-to-dock/app-ctrl-hotkey-2
+          /org/gnome/shell/extensions/dash-to-dock/app-ctrl-hotkey-3
+          /org/gnome/shell/extensions/dash-to-dock/app-ctrl-hotkey-4
+          /org/gnome/shell/extensions/dash-to-dock/app-ctrl-hotkey-5
+          /org/gnome/shell/extensions/dash-to-dock/app-ctrl-hotkey-6
+          /org/gnome/shell/extensions/dash-to-dock/app-ctrl-hotkey-7
+          /org/gnome/shell/extensions/dash-to-dock/app-ctrl-hotkey-8
+          /org/gnome/shell/extensions/dash-to-dock/app-ctrl-hotkey-9
+          /org/gnome/shell/extensions/dash-to-dock/app-ctrl-hotkey-10
           /org/gnome/shell/extensions/dash-to-dock/app-hotkey-1
           /org/gnome/shell/extensions/dash-to-dock/app-hotkey-2
           /org/gnome/shell/extensions/dash-to-dock/app-hotkey-3
@@ -394,7 +533,6 @@
           /org/gnome/desktop/wm/keybindings/panel-main-menu
           /org/gnome/desktop/wm/keybindings/panel-run-dialog
           /org/gnome/desktop/wm/keybindings/show-desktop
-          /org/gnome/desktop/wm/keybindings/switch-applications
           /org/gnome/desktop/wm/keybindings/switch-applications-backward
           /org/gnome/desktop/wm/keybindings/switch-group
           /org/gnome/desktop/wm/keybindings/switch-group-backward

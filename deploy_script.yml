@@ -289,6 +289,10 @@
         - gsettings set com.ubuntu.SoftwareProperties ubuntu-pro-banner-visible false
         - gsettings set org.gnome.desktop.notifications show-banners false
         - gsettings set org.gnome.desktop.a11y.applications screen-keyboard-enabled true
+        # - gsettings set org.gnome.desktop.session idle-delay 0
+        # - gsettings set org.gnome.settings-daemon.plugins.power sleep-inactive-ac-type 'nothing'
+        # - gsettings set org.gnome.settings-daemon.plugins.power sleep-inactive-battery-type 'nothing'
+        # - gsettings set org.gnome.settings-daemon.plugins.power power-saver-profile-on-low-battery false
         # GNOME Final Settings
         # - gsettings set org.gnome.settings-daemon.plugins.media-keys terminal "[]" 
         # - gsettings set org.gnome.settings-daemon.plugins.media-keys help "[]" 
