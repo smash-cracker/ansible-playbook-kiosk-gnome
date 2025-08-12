@@ -35,3 +35,8 @@
       debug:
         var: install_result.stderr_lines
       when: install_result.stderr_lines is defined and install_result.stderr_lines | length > 0
+
+    - name: Reboot the system
+      reboot:
+        msg: "Rebooting after VoIP AppImage and systemd service deployment"
+        reboot_timeout: 300
