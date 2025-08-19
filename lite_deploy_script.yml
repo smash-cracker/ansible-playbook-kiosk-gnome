@@ -295,6 +295,8 @@
         - gsettings set org.gnome.desktop.screensaver ubuntu-lock-on-suspend false
         # Miscallaneous settings:
         - gsettings set com.ubuntu.SoftwareProperties ubuntu-pro-banner-visible false
+        - gsettings set com.ubuntu.update-notifier notify-ubuntu-advantage-available false
+        - gsettings set com.ubuntu.update-notifier notify-ubuntu-advantage-available false
         - gsettings set org.gnome.desktop.notifications show-banners false
         - gsettings set org.gnome.desktop.a11y.applications screen-keyboard-enabled true
         - gsettings set org.gnome.desktop.session idle-delay 0
