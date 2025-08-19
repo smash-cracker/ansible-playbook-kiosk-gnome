@@ -8,7 +8,8 @@ if [ "$(id -u)" -ne 0 ]; then
     exit 1
 fi
 
-apt install -y build-essential dkms
+apt-get update -y
+apt-get install -y build-essential dkms "linux-headers-$(uname -r)"
 
 DRIVER_NAME="dwav-usb-mt"
 DRIVER_VERSION="1.0.0"
@@ -58,5 +59,7 @@ else
     fi
 fi
 
-echo "Driver installation and configuration completed successfully!"
+echo "Ensuring module is built for the current kernel..."
+dkms autoinstall -k "$(uname -r)"
 
+echo "Driver installation and configuration completed successfully!"

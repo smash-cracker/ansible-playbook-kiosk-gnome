@@ -4,7 +4,7 @@
   become: true
   vars:
     user_name: cezen
-    appimage_name: voip-x86_64_v1.5.11.AppImage
+    appimage_name: voip-x86_64_v1.5.12.AppImage
     appimage_path: /home/{{ user_name }}/Applications/{{ appimage_name }}
     desktop_file_path: /home/{{ user_name }}/.config/autostart/voip.desktop
     systemd_user_dir: /home/{{ user_name }}/.config/systemd/user

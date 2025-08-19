@@ -1,0 +1,48 @@
+---
+- name: Configure Plymouth theme
+  hosts: install_targets
+  become: true
+  vars:
+    background_src: background-tile.png
+
+  tasks:
+    - name: Set default plymouth to spinner (non-interactive)
+      ansible.builtin.alternatives:
+        name: default.plymouth
+        link: /usr/share/plymouth/themes/default.plymouth
+        path: /usr/share/plymouth/themes/spinner/spinner.plymouth
+        priority: 100
+
+    - name: Disable firmware background for boot-up
+      ansible.builtin.ini_file:
+        path: /usr/share/plymouth/themes/bgrt/bgrt.plymouth
+        section: boot-up
+        option: UseFirmwareBackground
+        value: "false"
+
+    - name: Disable firmware background for shutdown
+      ansible.builtin.ini_file:
+        path: /usr/share/plymouth/themes/bgrt/bgrt.plymouth
+        section: shutdown
+        option: UseFirmwareBackground
+        value: "false"
+
+    - name: Disable firmware background for reboot
+      ansible.builtin.ini_file:
+        path: /usr/share/plymouth/themes/bgrt/bgrt.plymouth
+        section: reboot
+        option: UseFirmwareBackground
+        value: "false"
+
+    - name: Copy background image to spinner theme folder
+      ansible.builtin.copy:
+        src: "./assets/{{ background_src }}"
+        dest: /usr/share/plymouth/themes/spinner/background-tile.png
+        owner: root
+        group: root
+        mode: "0644"
+
+    - name: Reboot the system
+      reboot:
+        msg: "Rebooting after VoIP AppImage and systemd service deployment"
+        reboot_timeout: 300
