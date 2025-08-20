@@ -54,12 +54,6 @@
       loop: "{{ panels_to_disable }}"
       register: rename_result
 
-    # - name: Set permissions to 000 on disabled desktop files
-    #   file:
-    #     path: "/usr/share/applications/{{ item }}.disabled"
-    #     mode: '0000'
-    #   loop: "{{ panels_to_disable }}"
-    #   when: "rename_result.results[loop.index0] is not skipped"
     - name: Copy just perfection to remote host
       copy:
         src: ./assets/just-perfection-26.0.zip
@@ -67,6 +61,7 @@
         owner: "{{ user_name }}"
         group: "{{ user_name }}"
         mode: '0664'
+
     - name: Configure inputrc to disable bell
       lineinfile:
         path: /home/{{ user_name }}/.inputrc
@@ -75,6 +70,20 @@
         owner: "{{ user_name }}"
         group: "{{ user_name }}"
         mode: '0644'
+        
+    - name: Set Update-Package-Lists to 0
+      ansible.builtin.lineinfile:
+        path: /etc/apt/apt.conf.d/20auto-upgrades
+        regexp: '^APT::Periodic::Update-Package-Lists'
+        line: 'APT::Periodic::Update-Package-Lists "0";'
+        create: yes
+
+    - name: Set Unattended-Upgrade to 0
+      ansible.builtin.lineinfile:
+        path: /etc/apt/apt.conf.d/20auto-upgrades
+        regexp: '^APT::Periodic::Unattended-Upgrade'
+        line: 'APT::Periodic::Unattended-Upgrade "0";'
+        create: yes
 
     - name: Copy just perfection to remote host
       copy:
@@ -296,7 +305,8 @@
         # Miscallaneous settings:
         - gsettings set com.ubuntu.SoftwareProperties ubuntu-pro-banner-visible false
         - gsettings set com.ubuntu.update-notifier notify-ubuntu-advantage-available false
-        - gsettings set com.ubuntu.update-notifier notify-ubuntu-advantage-available false
+        - gsettings set com.ubuntu.update-notifier no-show-notifications true
+        - gsettings set com.ubuntu.update-notifier regular-auto-launch-interval 2000
         - gsettings set org.gnome.desktop.notifications show-banners false
         - gsettings set org.gnome.desktop.a11y.applications screen-keyboard-enabled true
         - gsettings set org.gnome.desktop.session idle-delay 0

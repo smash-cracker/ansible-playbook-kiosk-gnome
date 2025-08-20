@@ -1,0 +1,86 @@
+---
+- name: Apply Ubuntu notifier tweaks and lock them (additive)
+  hosts: install_targets
+  become: true
+  vars:
+    user_name: cezen
+    dconf_defaults_file: /etc/dconf/db/local.d/01-notify-settings
+    dconf_locks_file: /etc/dconf/db/local.d/locks/01-notify-settings
+
+  tasks:
+          
+    - name: Set Update-Package-Lists to 0
+      ansible.builtin.lineinfile:
+        path: /etc/apt/apt.conf.d/20auto-upgrades
+        regexp: '^APT::Periodic::Update-Package-Lists'
+        line: 'APT::Periodic::Update-Package-Lists "0";'
+        create: yes
+
+    - name: Set Unattended-Upgrade to 0
+      ansible.builtin.lineinfile:
+        path: /etc/apt/apt.conf.d/20auto-upgrades
+        regexp: '^APT::Periodic::Unattended-Upgrade'
+        line: 'APT::Periodic::Unattended-Upgrade "0";'
+        create: yes
+
+    - name: Apply GNOME settings using gsettings
+      command: "{{ item }}"
+      loop:
+        - gsettings set com.ubuntu.SoftwareProperties ubuntu-pro-banner-visible false
+        - gsettings set com.ubuntu.update-notifier notify-ubuntu-advantage-available false
+        - gsettings set com.ubuntu.update-notifier no-show-notifications true
+        - gsettings set com.ubuntu.update-notifier regular-auto-launch-interval 2000
+        - gsettings set org.gnome.desktop.notifications show-banners false
+      environment:
+        DISPLAY: ":0"
+        XDG_CURRENT_DESKTOP: "GNOME"
+        DBUS_SESSION_BUS_ADDRESS: "unix:path=/run/user/1000/bus"
+      become_user: "{{ user_name }}"
+      become: true
+
+    - name: Ensure dconf dirs exist (does not modify existing files)
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: directory
+        owner: root
+        group: root
+        mode: '0755'
+      loop:
+        - /etc/dconf/db/local.d
+        - /etc/dconf/db/local.d/locks
+
+    # --- System defaults (new file, separate from your 00-extension-settings)
+    - name: Write system defaults for notifier/pro/gnome banners
+      ansible.builtin.copy:
+        dest: "{{ dconf_defaults_file }}"
+        owner: root
+        group: root
+        mode: '0644'
+        content: |
+          [com/ubuntu/SoftwareProperties]
+          ubuntu-pro-banner-visible=false
+
+          [com/ubuntu/update-notifier]
+          notify-ubuntu-advantage-available=false
+          no-show-notifications=true
+          regular-auto-launch-interval=2000
+
+          [org/gnome/desktop/notifications]
+          show-banners=false
+
+    # --- Locks (new file, additive with existing locks)
+    - name: Lock the notifier/pro/gnome banner keys
+      ansible.builtin.copy:
+        dest: "{{ dconf_locks_file }}"
+        owner: root
+        group: root
+        mode: '0644'
+        content: |
+          /com/ubuntu/SoftwareProperties/ubuntu-pro-banner-visible
+          /com/ubuntu/update-notifier/notify-ubuntu-advantage-available
+          /com/ubuntu/update-notifier/no-show-notifications
+          /com/ubuntu/update-notifier/regular-auto-launch-interval
+          /org/gnome/desktop/notifications/show-banners
+
+    - name: Rebuild dconf system database (merges with existing locks/defaults)
+      ansible.builtin.command: dconf update
