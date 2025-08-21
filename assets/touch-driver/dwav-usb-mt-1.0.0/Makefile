@@ -45,25 +45,26 @@
 #	cat /sys/module/usbhid/parameters/quirks
 #------------------------------------------------------------------------------
 #------------------------------------------------------------------------------
-KERNEL_VERSION		:= $(shell uname -r)
-KERNEL_MODULE_DIR	:= /lib/modules/$(KERNEL_VERSION)
-KERNEL_SOURCE		:= $(KERNEL_MODULE_DIR)/build
+KVER ?= $(shell uname -r)
+KDIR := /lib/modules/$(KVER)/build
+PWD  := $(shell pwd)
 
-DRIVER_MODULE_NAME	:= dwav-usb-mt
-DRIVER_INSTALL_DIR	:= $(KERNEL_MODULE_DIR)/kernel/drivers/input/touchscreen
+DRIVER_MODULE_NAME := dwav-usb-mt
+# Only used if you run "make install" manually (DKMS installs for you):
+DRIVER_INSTALL_DIR := /lib/modules/$(KVER)/kernel/drivers/input/touchscreen
 
 obj-m += $(DRIVER_MODULE_NAME).o
 
 all:
-	$(MAKE) -C $(KERNEL_SOURCE) M=$(shell pwd) modules
+	$(MAKE) -C $(KDIR) M=$(PWD) modules
 
 clean:
-	$(MAKE) -C $(KERNEL_SOURCE) M=$(shell pwd) clean
+	$(MAKE) -C $(KDIR) M=$(PWD) clean
 
 install:
 	install -p -m 644 $(DRIVER_MODULE_NAME).ko $(DRIVER_INSTALL_DIR)
-	/sbin/depmod -a $(KERNEL_VERSION)
+	/sbin/depmod -a $(KVER)
 
 uninstall:
 	rm -f $(DRIVER_INSTALL_DIR)/$(DRIVER_MODULE_NAME).ko
-	/sbin/depmod -a $(KERNEL_VERSION)
+	/sbin/depmod -a $(KVER)

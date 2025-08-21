@@ -37,7 +37,7 @@ echo "Building driver with DKMS..."
 dkms build -m "$DRIVER_NAME" -v "$DRIVER_VERSION"
 
 echo "Installing driver with DKMS..."
-dkms install -m "$DRIVER_NAME" -v "$DRIVER_VERSION"
+dkms autoinstall -m "$DRIVER_NAME" -v "$DRIVER_VERSION"
 
 # Handle HID quirks safely
 echo "Checking USB HID quirks..."
