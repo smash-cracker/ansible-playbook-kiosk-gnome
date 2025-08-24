@@ -50,42 +50,14 @@
         mode: '0644'
         owner: "{{ user_name }}"
         group: "{{ user_name }}"
+    
+    - name: Remove Firefox snap package
+      command: sudo snap remove firefox
+      become: true
 
-    # - name: Ensure systemd user unit directory exists
-    #   file:
-    #     path: "{{ systemd_user_dir }}"
-    #     state: directory
-    #     mode: '0755'
-    #     owner: "{{ user_name }}"
-    #     group: "{{ user_name }}"
-
-    # - name: Deploy voip.service user unit
-    #   copy:
-    #     dest: "{{ systemd_user_dir }}/{{ service_unit }}"
-    #     content: |
-    #       [Unit]
-    #       Description=Auto-restart VoIP AppImage
-
-    #       [Service]
-    #       ExecStart={{ appimage_path }}
-    #       Restart=always
-    #       RestartSec=5
-
-    #       [Install]
-    #       WantedBy=default.target
-    #     mode: '0644'
-    #     owner: "{{ user_name }}"
-    #     group: "{{ user_name }}"
-
-    # - name: Reload and enable user service (as cezen)
-    #   become: false
-    #   become_user: "{{ user_name }}"
-    #   shell: |
-    #     systemctl --user daemon-reload
-    #     systemctl --user enable {{ service_unit }}
-    #     systemctl --user start {{ service_unit }}
-    #   args:
-    #     executable: /bin/bash
+    - name: Install Firefox snap package
+      command: sudo snap install firefox
+      become: true
 
     - name: Reboot the system
       reboot:
