@@ -1,0 +1,19 @@
+- name: Read product UUID and append to file
+  hosts: all
+  become: yes
+  vars:
+    target_user: "{{ ansible_user }}"
+  
+  tasks:
+    - name: Read product UUID
+      shell: cat /sys/class/dmi/id/product_uuid
+      register: product_uuid_result
+      changed_when: false
+
+    - name: Create or append product UUID to file
+      lineinfile:
+        path: "{{ playbook_dir }}/product_uuids.txt"
+        line: "{{ inventory_hostname }}: {{ product_uuid_result.stdout }}"
+        create: yes
+      delegate_to: localhost
+      become: false
