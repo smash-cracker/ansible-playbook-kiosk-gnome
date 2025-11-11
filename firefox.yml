@@ -1,0 +1,17 @@
+- name: Setup I2C device access permissions
+  hosts: all
+  become: yes
+  vars:
+    target_user: "{{ ansible_user }}"
+
+  tasks:
+    - name: Remove Firefox snap
+      community.general.snap:
+        name: firefox
+        state: absent
+
+    - name: Install Firefox snap
+      community.general.snap:
+        name: firefox
+        state: present
+        classic: false

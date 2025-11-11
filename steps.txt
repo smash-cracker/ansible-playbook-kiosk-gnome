@@ -8,7 +8,7 @@ ssh-copy-id cezen@172.16.11.185
 
 
 ----------start Ansible--------------
-ANSIBLE_HOST_KEY_CHECKING=False ansible-playbook -i hosts.ini deploy_script.yml -vv
+ANSIBLE_HOST_KEY_CHECKING=False ansible-playbook -i hosts.ini i2c_setup.yml lite_deploy_script.yml application_script.yml fetch_uuid.yml boot_image.yml -vv
 ----------start Ansible--------------
 
 
