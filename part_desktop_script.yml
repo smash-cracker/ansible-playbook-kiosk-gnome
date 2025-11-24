@@ -1,0 +1,52 @@
+---
+- name: Deploy Just Perfection GNOME extension
+  hosts: install_targets
+  become: true
+
+  vars:
+    user_name: cezen
+    panels_to_disable:
+    - gnome-camera-panel.desktop
+    - gnome-color-panel.desktop
+    - gnome-default-apps-panel.desktop
+    - gnome-bluetooth-panel.desktop
+    - gnome-background-panel.desktop
+    - gnome-multitasking-panel.desktop
+    - gnome-sharing-panel.desktop
+    - gnome-applications-panel.desktop
+    - gnome-notifications-panel.desktop
+    - gnome-online-accounts-panel.desktop
+    - gnome-printers-panel.desktop
+    - gnome-region-panel.desktop
+    - gnome-removable-media-panel.desktop
+    - gnome-user-accounts-panel.desktop
+    - gnome-ubuntu-panel.desktop
+    - gnome-keyboard-panel.desktop
+    - gnome-mouse-panel.desktop
+# 
+    - gnome-usage-panel.desktop
+    - gnome-thunderbolt-panel.desktop
+    - gnome-location-panel.desktop
+    - gnome-diagnostics-panel.desktop
+    - gnome-connectivity-panel.desktop
+    - gnome-search-panel.desktop
+    - gnome-display-panel.desktop
+
+  tasks:
+    - name: Install required packages
+      apt:
+        name:
+          - gettext
+          - gnome-shell-extension-manager
+          - libglib2.0-dev-bin
+          - libfuse2
+          - dconf-editor
+        state: present
+        update_cache: yes
+
+    - name: Delete unwanted .desktop files
+      file:
+        path: "/usr/share/applications/{{ item }}"
+        state: absent
+      loop: "{{ panels_to_disable }}"
+      ignore_errors: true
