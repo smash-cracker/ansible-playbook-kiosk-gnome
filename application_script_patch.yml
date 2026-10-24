@@ -1,4 +1,3 @@
----
 - name: Deploy VoIP AppImage application
   hosts: install_targets
   become: true
@@ -13,6 +12,34 @@
     service_unit: voip.service
 
   tasks:
+    - name: Find and remove existing AppImage files in Applications directory
+      find:
+        paths: /home/{{ user_name }}/Applications
+        patterns: "*.AppImage"
+        file_type: file
+      register: existing_appimages
+
+    - name: Remove existing AppImage files
+      file:
+        path: "{{ item.path }}"
+        state: absent
+      loop: "{{ existing_appimages.files }}"
+      when: existing_appimages.matched > 0
+
+    - name: Find and remove existing voip desktop files in autostart
+      find:
+        paths: /home/{{ user_name }}/.config/autostart
+        patterns: "voip*.desktop"
+        file_type: file
+      register: existing_desktop_files
+
+    - name: Remove existing voip desktop files
+      file:
+        path: "{{ item.path }}"
+        state: absent
+      loop: "{{ existing_desktop_files.files }}"
+      when: existing_desktop_files.matched > 0
+
     - name: Create Applications directory for user
       file:
         path: /home/{{ user_name }}/Applications
@@ -69,14 +96,6 @@
         owner: "{{ user_name }}"
         group: "{{ user_name }}"
     
-    # - name: Remove Firefox snap package
-    #   command: sudo snap remove firefox
-    #   become: true
-
-    # - name: Install Firefox snap package
-    #   command: sudo snap install firefox
-    #   become: true
-
     - name: Reboot the system
       reboot:
         msg: "Rebooting after VoIP AppImage and systemd service deployment"
