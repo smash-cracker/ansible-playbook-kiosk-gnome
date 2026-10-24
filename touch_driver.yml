@@ -3,7 +3,7 @@
   hosts: install_targets
   become: true
   vars:
-    user_name: cezen
+    user_name: voip-001
     driver_source_folder: ./assets/touch-driver
     driver_dest_folder: /home/{{ user_name }}/touch-driver
 
