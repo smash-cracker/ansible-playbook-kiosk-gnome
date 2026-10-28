@@ -2,7 +2,7 @@
 # Variant of application_script.yml that runs the client as a systemd --user
 # service with Restart=always instead of an XDG autostart entry.
 #
-# Run this INSTEAD OF application_script.yml / application_script_patch.yml:
+# Run this INSTEAD OF application_script.yml:
 #   ANSIBLE_HOST_KEY_CHECKING=False ansible-playbook -i hosts.ini \
 #       application_script_systemd.yml -vv
 #

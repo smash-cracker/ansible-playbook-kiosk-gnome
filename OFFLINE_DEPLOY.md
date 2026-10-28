@@ -392,11 +392,11 @@ install -m755 /home/denny/Office/cvoip_desktop_stable_deploy/voip-x86_64.AppImag
   assets/voip-x86_64.AppImage
 ```
 
-Point the playbooks at that filename (`application_script.yml`, `application_script_patch.yml` and `application_script_systemd.yml` if used):
+Point the playbooks at that filename (`application_script.yml` and `application_script_systemd.yml` if used):
 
 ```bash
 sed -i 's/^\( *appimage_name:\).*/\1 voip-x86_64.AppImage/' \
-  application_script.yml application_script_patch.yml application_script_systemd.yml
+  application_script.yml application_script_systemd.yml
 grep -n appimage_name application_script*.yml
 ```
 
@@ -608,7 +608,6 @@ git checkout -- deploy_script.yml lite_deploy_script.yml part_desktop_script.yml
 | `lite_deploy_script.yml` | same as `deploy_script.yml`, plus disabling APT periodic updates (the variant used in `steps.txt`) |
 | `part_desktop_script.yml` | desktop/panel customisation only |
 | `application_script.yml` | copies the AppImage + `voip.ini`, creates XDG autostart entry |
-| `application_script_patch.yml` | byte-identical copy of `application_script.yml` |
 | `application_script_systemd.yml` | AppImage as a `systemd --user` service with `Restart=always`; removes the autostart entry |
 | `boot_image.yml` | Plymouth boot splash |
 | `fetch_uuid.yml` | appends the machine's DMI product UUID to `product_uuids.txt` on the laptop |
