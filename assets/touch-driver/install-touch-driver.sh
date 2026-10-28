@@ -8,8 +8,8 @@ if [ "$(id -u)" -ne 0 ]; then
     exit 1
 fi
 
-apt-get update -y
-apt-get install -y build-essential dkms "linux-headers-$(uname -r)"
+# apt-get update -y
+# apt-get install -y build-essential dkms "linux-headers-$(uname -r)"
 
 DRIVER_NAME="dwav-usb-mt"
 DRIVER_VERSION="1.0.0"

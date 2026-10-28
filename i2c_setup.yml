@@ -10,7 +10,7 @@
       apt:
         name: i2c-tools
         state: present
-        update_cache: yes
+        update_cache: no
 
     - name: Detect I2C bus
       command: i2cdetect -y 1

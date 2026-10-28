@@ -42,7 +42,7 @@
           - libfuse2
           - dconf-editor
         state: present
-        update_cache: yes
+        update_cache: no
 
     - name: Configure inputrc to disable bell
       lineinfile:

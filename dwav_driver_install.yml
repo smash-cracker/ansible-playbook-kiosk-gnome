@@ -18,7 +18,7 @@
           - build-essential
           - dkms
         state: present
-        update_cache: yes
+        update_cache: no
 
     - name: Remove existing DKMS module (if any)
       shell: dkms remove -m "{{ driver_name }}" -v "{{ driver_version }}" --all
