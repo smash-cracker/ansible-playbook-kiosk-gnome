@@ -26,6 +26,44 @@ Placeholders used below:
 
 ---
 
+## Quick path (streamlined)
+
+Once the laptop is prepared (§0), the whole flow is three commands. Steps 1 and 2 run **once per
+ISO/installer-option combination**, not once per device; step 3 runs per device.
+
+```bash
+# 1. ONE TIME on the laptop: build the delta bundle and put it on the data stick.
+#    The builder also copies kiosk-firstboot.sh inside the bundle.
+./scripts/build_offline_bundle.py --baseline ~/baseline.txt --output ~/offline-packages-delta
+cp -a ~/offline-packages-delta /media/$USER/DEBS/
+
+# 2. kiosk, after the fresh install and first desktop login: install + verify
+#    (run this on every kiosk; it is idempotent)
+bash /media/$USER/DEBS/offline-packages-delta/kiosk-firstboot.sh
+
+# 3. laptop: SSH key setup + all playbooks, in order
+./scripts/deploy.sh --host <TARGET_IP> -vv
+```
+
+`baseline.txt` is the package list of a *fresh* install. Every kiosk installed from the same ISO
+with the same installer options has the same baseline, so capture it once (from the first kiosk
+before installing anything, or from a throwaway VM), keep it next to the repo, and rebuild only
+when the ISO, installer options or package set change. `kiosk-firstboot.sh --check` on each new
+kiosk catches a device that drifted from that baseline.
+
+- `kiosk-firstboot.sh` installs the bundle, enables SSH, and verifies the assumptions the
+  playbooks make (Ubuntu 22.04, uid 1000, kernel headers, `gcc-12`, `libfuse2`, `dkms`, GNOME
+  session). It exits non-zero if anything is missing.
+- `deploy.sh` parses `hosts.ini` (inline vars or `[install_targets:vars]`), runs `ssh-copy-id`
+  only when key auth is missing, then runs `i2c_setup.yml`, `lite_deploy_script.yml`,
+  `application_script.yml`, `fetch_uuid.yml`, `boot_image.yml` and `touch_driver.yml` in order.
+  Useful flags: `--list`, `--key-only`, `--skip-touch`, `--systemd`, `--no-key-setup`, `-v`.
+
+The rest of this document is the manual path; it stays valid for troubleshooting and for the
+legacy full-closure bundle.
+
+---
+
 ## 0. Assumptions and one-time checks
 
 Laptop (internet side):

@@ -25,6 +25,7 @@ Usage:
 import argparse
 import os
 import re
+import shutil
 import subprocess
 import sys
 
@@ -232,6 +233,14 @@ def main():
     with open("packages.txt", "w") as fh:
         for f in debs("."):
             fh.write(f + "\n")
+
+    # Ship the first-boot provisioner with the bundle, so the pendrive is
+    # self-contained: bash <stick>/offline-packages-delta/kiosk-firstboot.sh
+    provisioner = os.path.join(os.path.dirname(os.path.abspath(__file__)), "kiosk-firstboot.sh")
+    if os.path.isfile(provisioner):
+        dst = os.path.join(os.path.abspath("."), os.path.basename(provisioner))
+        shutil.copy2(provisioner, dst)
+        os.chmod(dst, 0o755)
 
     print()
     print(f"debs in bundle : {len(debs('.'))}")
