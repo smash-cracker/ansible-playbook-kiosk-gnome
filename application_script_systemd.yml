@@ -1,0 +1,140 @@
+---
+# Variant of application_script.yml that runs the client as a systemd --user
+# service with Restart=always instead of an XDG autostart entry.
+#
+# Run this INSTEAD OF application_script.yml / application_script_patch.yml:
+#   ANSIBLE_HOST_KEY_CHECKING=False ansible-playbook -i hosts.ini \
+#       application_script_systemd.yml -vv
+#
+# The service is enabled (not started) and the machine reboots. On the next
+# graphical login GNOME activates graphical-session.target and the unit starts.
+- name: Deploy VoIP AppImage as a restarting systemd user service
+  hosts: install_targets
+  become: true
+  vars:
+    user_name: cezen
+    # Change this if you copy the AppImage under a versioned name, e.g.
+    # voip-x86_64_v1.6.8.AppImage
+    appimage_name: voip-x86_64.AppImage
+    ini_name: voip.ini
+    appimage_path: /home/{{ user_name }}/Applications/{{ appimage_name }}
+    ini_path: /home/{{ user_name }}/.config/voip/{{ ini_name }}
+    desktop_file_path: /home/{{ user_name }}/.config/autostart/voip.desktop
+    systemd_user_dir: /home/{{ user_name }}/.config/systemd/user
+    service_unit: voip.service
+
+  tasks:
+    - name: Create Applications directory for user
+      file:
+        path: /home/{{ user_name }}/Applications
+        state: directory
+        mode: '0755'
+        owner: "{{ user_name }}"
+        group: "{{ user_name }}"
+
+    - name: Copy VoIP AppImage to user Applications folder
+      copy:
+        src: ./assets/{{ appimage_name }}
+        dest: "{{ appimage_path }}"
+        mode: '0755'
+        owner: "{{ user_name }}"
+        group: "{{ user_name }}"
+
+    - name: Create voip config directory
+      file:
+        path: "{{ ini_path | dirname }}"
+        state: directory
+        mode: '0755'
+        owner: "{{ user_name }}"
+        group: "{{ user_name }}"
+
+    - name: Copy VoIP .ini to user Applications folder
+      copy:
+        src: ./assets/{{ ini_name }}
+        dest: "{{ ini_path }}"
+        mode: '0755'
+        owner: "{{ user_name }}"
+        group: "{{ user_name }}"
+
+    # Needed to talk to cezen's systemd --user manager from this root session.
+    - name: Look up UID of {{ user_name }}
+      getent:
+        database: passwd
+        key: "{{ user_name }}"
+
+    - name: Remember kiosk user UID
+      set_fact:
+        user_uid: "{{ getent_passwd[user_name][1] }}"
+
+    - name: Enable lingering so the user manager runs without an interactive login
+      command: loginctl enable-linger {{ user_name }}
+      changed_when: false
+
+    - name: Wait for the user systemd manager socket
+      wait_for:
+        path: /run/user/{{ user_uid }}/bus
+        timeout: 20
+
+    - name: Create systemd user unit directory
+      file:
+        path: "{{ systemd_user_dir }}"
+        state: directory
+        mode: '0755'
+        owner: "{{ user_name }}"
+        group: "{{ user_name }}"
+
+    # Autostart + systemd would launch two instances, so drop the old entry.
+    - name: Remove the autostart entry to avoid launching the client twice
+      file:
+        path: "{{ desktop_file_path }}"
+        state: absent
+
+    - name: Install voip.service user unit
+      copy:
+        dest: "{{ systemd_user_dir }}/{{ service_unit }}"
+        content: |
+          [Unit]
+          Description=CVoIP
+          After=graphical-session.target
+          PartOf=graphical-session.target
+          # Never give up restarting, even if the app keeps failing.
+          StartLimitIntervalSec=0
+
+          [Service]
+          Type=simple
+          # GNOME on Xorg. For a Wayland session also set
+          # Environment=WAYLAND_DISPLAY=wayland-0
+          Environment=DISPLAY=:0
+          Environment=XAUTHORITY=%h/.Xauthority
+          ExecStart={{ appimage_path }}
+          Restart=always
+          RestartSec=5
+
+          [Install]
+          WantedBy=graphical-session.target
+        mode: '0644'
+        owner: "{{ user_name }}"
+        group: "{{ user_name }}"
+
+    - name: Reload the user systemd manager
+      command: systemctl --user daemon-reload
+      become_user: "{{ user_name }}"
+      environment:
+        XDG_RUNTIME_DIR: "/run/user/{{ user_uid }}"
+        DBUS_SESSION_BUS_ADDRESS: "unix:path=/run/user/{{ user_uid }}/bus"
+      changed_when: false
+
+    - name: Enable voip.service for the user
+      command: systemctl --user enable {{ service_unit }}
+      become_user: "{{ user_name }}"
+      environment:
+        XDG_RUNTIME_DIR: "/run/user/{{ user_uid }}"
+        DBUS_SESSION_BUS_ADDRESS: "unix:path=/run/user/{{ user_uid }}/bus"
+      register: enable_result
+      changed_when: "'Created symlink' in (enable_result.stdout ~ enable_result.stderr)"
+
+    - name: Reboot the system
+      reboot:
+        msg: "Rebooting after VoIP AppImage and systemd user service deployment"
+        reboot_timeout: 300
+...
