@@ -17,6 +17,8 @@
         name:
           - build-essential
           - dkms
+          # 6.8 HWE headers pin CC=gcc-12; build-essential only provides gcc-11 on 22.04
+          - gcc-12
         state: present
         update_cache: no
 

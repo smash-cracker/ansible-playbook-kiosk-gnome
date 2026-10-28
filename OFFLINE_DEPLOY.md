@@ -127,7 +127,58 @@ Safety: `dd` with the wrong target irreversibly overwrites that disk. Confirm th
 
 ## 2. Build the offline `.deb` bundle on the laptop
 
-This bundle includes every package the playbooks install, their full dependency tree, and a matching kernel + headers pair so DKMS (touch driver) works without knowing `uname -r` in advance.
+> **Use the delta method for a fresh 22.04.5 install.** The original full-closure bundle upgrades
+> base-system libraries without their matching daemons and can break polkit, accounts-daemon,
+> NetworkManager and GDM (observed 2026-10-29: no GUI, eject/reboot denied). The delta bundle only
+> adds packages missing from a fresh install and does not touch the base OS unless a version
+> constraint forces it.
+
+### Recommended: baseline-delta bundle
+
+On the freshly installed target, **before installing anything**, save its package baseline:
+
+```bash
+uname -r
+dpkg -l "linux-headers-$(uname -r)" | grep '^ii'      # expected ii on a desktop install
+dpkg-query -W -f='${Package}\t${Version}\n' | sort > ~/baseline.txt
+```
+
+Copy `baseline.txt` to the laptop (Ventoy or scp), then build the delta:
+
+```bash
+cd /home/denny/Office/ansible-playbook-kiosk-gnome
+./scripts/build_offline_bundle.py --baseline /path/to/baseline.txt \
+    --output ~/offline-packages-delta
+```
+
+The script:
+
+- starts from `libfuse2 openssh-server gettext i2c-tools build-essential gcc-12 dkms zip unzip
+  python3-apt dconf-cli`
+  (`gnome-shell-extension-manager`, `libglib2.0-dev-bin` and `dconf-editor` were removed from the
+  playbooks — they are not used, and `gnome-shell-extension-manager` pulled the whole GNOME upgrade
+  chain; `zip`/`unzip` are needed by `gnome-extensions pack` and Ansible's `unarchive`, and the
+  delta filter drops them if the baseline already has them);
+- drops every package already present in the baseline;
+- if a downloaded package requires a newer version of a baseline package, adds that upgrade **and
+  every baseline package that pins the old version with an exact `(= version)` dependency**
+  (polkitd, accountsservice, gdm3, network-manager, …);
+- writes `packages.txt` and prints the list of baseline upgrades for review.
+
+A fresh 22.04.5 desktop already has `linux-headers-6.8.0-40-generic`, so no kernel debs are needed.
+If the baseline check shows no headers, add `linux-headers-$(uname -r)` to `--pkgs`.
+
+Install on the target — small bundle, GUI stays untouched:
+
+```bash
+sudo apt install -y ~/offline-packages-delta/*.deb
+```
+
+### Legacy: full-closure bundle (not recommended for fresh installs)
+
+The remainder of this section documents the original self-contained bundle. It upgrades libraries
+such as libpolkit, libaccountsservice0 and libnm0 and therefore must also ship the matching daemons.
+Prefer the delta method above.
 
 ```bash
 rm -rf ~/offline-packages
@@ -144,6 +195,7 @@ apt-rdepends $PKGS 2>/dev/null \
   | awk '/^[^ ]/ && $0 !~ /^(PreDepends|Depends|Recommends|Suggests|Conflicts|Replaces|Provides|Breaks|Enhances|Obsoletes):$/ {print $1}' \
   | sed 's/:any$//' \
   | grep -v ':i386$' \
+  | grep -vE '^(libsystemd0|libudev1|udev|systemd|systemd-[a-z0-9-]+|libpam-systemd|libnss-systemd)$' \
   | sort -u > package-list.txt
 
 while read -r pkg; do
@@ -164,8 +216,14 @@ Notes:
   `libc-dev`, `libgirepository-1.0-1-with-libffi8`, `libjack-0.125`, `libsoup3.0-0`,
   `logind`, `myspell-dictionary`, `perlapi-5.34.0`.
   Their real providers are in the bundle (e.g. `libsoup3.0-0` → `libsoup-3.0-0`).
-- Reference result (2026-10-28): **565 debs, 757 MB**; 580 list entries = 565 debs + 15 virtual skips.
+- Reference result (2026-10-28): **562 debs, 755 MB**; 577 list entries = 562 debs + 15 virtual skips.
 - The `MISSING:` loop must print nothing.
+- **The systemd/udev stack is deliberately excluded.** A fresh Ubuntu already has it, and bundling
+  an upgraded `libsystemd0`/`libudev1`/`udev` without the matching `systemd`, `libpam-systemd`,
+  `systemd-sysv`, … triggers exact-version dependency failures offline:
+  `libpam-systemd : Depends: systemd (= ...) but it is not installable`.
+  Leaving the target's own stack untouched avoids that entirely. If you build a bundle without the
+  new filter, delete `libsystemd0_*.deb`, `libudev1_*.deb` and `udev_*.deb` before installing.
 - `linux-generic-hwe-22.04` pulls the 6.8.0-138 image, modules, modules-extra and headers, plus
   `linux-firmware` (302 MB), `intel-microcode` and `amd64-microcode` — those three are hard
   dependencies of the image meta, which is why the bundle is ~750 MB.
@@ -218,6 +276,10 @@ du -h voip-offline-debs.tar
 
 ### Kernel-pinned variant (stay on 6.8.0-40)
 
+> Not needed with the delta method: a fresh 22.04.5 desktop already has
+> `linux-headers-6.8.0-40-generic` in its baseline. This section applies to the legacy full bundle
+> only.
+
 A fresh 22.04.5 install runs `6.8.0-40-generic`. The bundle above upgrades it to 6.8.0-138.
 If you want to keep the ISO kernel instead, build a second folder by copying the main bundle and
 swapping only the kernel pieces:
@@ -245,8 +307,9 @@ apt download linux-headers-6.8.0-40-generic linux-hwe-6.8-headers-6.8.0-40 \
              linux-modules-extra-6.8.0-40-generic
 ```
 
-Reference result: **559 debs, 442 MB**. Only the headers are required for DKMS; the image and
-modules are already installed by the ISO and are included for completeness.
+Reference result: **556 debs, 440 MB**. Only the headers are required for DKMS; the image and
+modules are already installed by the ISO and are included for completeness. The copied base set
+already excludes the systemd/udev stack (see the note in §2).
 
 On the target:
 
@@ -338,18 +401,29 @@ The kernel here will be the ISO's 6.8.0-4x — that is fine, the bundle installs
 
 ## 5. Install the offline debs on the kiosk
 
-Plug `<USB_DEBS>`, copy the archive off it (Files app or terminal):
+### Delta bundle (recommended)
+
+Plug `<USB_DEBS>`, copy the folder off it and install:
 
 ```bash
-mkdir -p ~/offline && cp /media/$USER/DEBS/voip-offline-debs.tar.gz ~/offline/
-cd ~/offline
-tar xzf voip-offline-debs.tar.gz
-cd offline-packages
-
+cp -a /media/$USER/DEBS/offline-packages-delta ~/
+cd ~/offline-packages-delta
 sudo apt install -y ./*.deb
 ```
 
-Use `apt install ./*.deb`, not `dpkg -i` — apt resolves the ordering among the local files. If it still reports dependency problems:
+No reboot is needed: the delta does not change the kernel or the desktop stack.
+
+```bash
+uname -r                                              # 6.8.0-40-generic (unchanged)
+dpkg -l "linux-headers-$(uname -r)" | grep '^ii'      # ii
+systemctl status gdm3 --no-pager | head -5            # GUI untouched, active
+systemctl status ssh --no-pager | head -5             # active
+```
+
+If SSH is not running: `sudo systemctl enable --now ssh`.
+
+Use `apt install ./*.deb`, not `dpkg -i` — apt resolves the ordering among the local files. If it
+still reports dependency problems:
 
 ```bash
 sudo dpkg -i ./*.deb
@@ -357,29 +431,28 @@ sudo dpkg -i ./*.deb
 sudo dpkg --configure -a
 ```
 
-Reboot into the bundled kernel so the running kernel has matching headers:
+### Legacy full-closure bundle
+
+Copy the archive off the stick, install, then reboot into the bundled kernel:
 
 ```bash
+mkdir -p ~/offline && cp /media/$USER/DEBS/voip-offline-debs.tar.gz ~/offline/
+cd ~/offline && tar xzf voip-offline-debs.tar.gz
+cd offline-packages
+
+sudo apt install -y ./*.deb
 sudo reboot
 ```
 
 After reboot:
 
 ```bash
-uname -r                                              # expect 6.8.0-138-generic
-dpkg -l "linux-headers-$(uname -r)" | grep '^ii'      # must print an ii line
-systemctl status ssh --no-pager | head -5             # must be active (running)
+uname -r                                              # 6.8.0-138-generic
+dpkg -l "linux-headers-$(uname -r)" | grep '^ii'
+systemctl status ssh --no-pager | head -5
 ```
 
-If SSH is not running:
-
-```bash
-sudo systemctl enable --now ssh
-```
-
-Do not run the touch-driver playbook before this check passes.
-
-If the ISO kernel is what you want and its headers are already present, you can skip the kernel packages and the reboot in future rebuilds — but with the bundle above, just follow the order.
+Do not run the touch-driver playbook before the headers check passes.
 
 ---
 
@@ -559,6 +632,7 @@ Then reboot and confirm the app starts on login.
 | AppImage will not start but FUSE is missing | `APPIMAGE_EXTRACT_AND_RUN=1 ~/Applications/<appimage_name>` |
 | `application_script.yml` cannot find the asset | `appimage_name` does not match the file in `assets/` |
 | `snap install firefox` fails | expected offline — do not run `firefox.yml` |
+| No GUI after reboot, tty only; `polkit authority not available`; eject/reboot denied | full-closure bundle upgraded libpolkit/libaccountsservice0/libnm0 without polkitd/accountsservice/network-manager/GDM. Use the delta bundle (§2); if already broken, add those daemons at matching versions and reboot |
 
 ---
 
@@ -568,11 +642,14 @@ Then reboot and confirm the app starts on login.
 |---|---|
 | `openssh-server` (+ sftp-server, `ssh-import-id`) | Ansible connectivity |
 | `libfuse2` | running the AppImage on 22.04 |
-| `gettext` (`msgfmt`), `libglib2.0-dev-bin` (`glib-compile-schemas`) | building the just-perfection extension |
-| `gnome-shell-extension-manager`, `dconf-editor` | installed by the desktop playbooks |
+| `gettext` (`msgfmt`) | packing the just-perfection extension |
 | `i2c-tools` | `i2c_setup.yml` |
-| `build-essential`, `dkms`, `linux-headers-*` | DWAV touch driver |
-| `unzip`, `python3-apt`, `dconf-cli` | Ansible modules / `dconf update` / `dconf reset` |
-| `linux-generic-hwe-22.04` | guarantees a kernel + matching headers after reboot |
+| `build-essential`, `dkms`, `linux-headers-*` | DWAV touch driver (`linux-headers` already in a desktop baseline) |
+| `unzip`, `python3-apt`, `dconf-cli` | Ansible modules / `dconf update` / `dconf reset` — already in a desktop baseline |
+| `glib-compile-schemas` | provided by baseline `libglib2.0-bin` (no `libglib2.0-dev-bin` needed) |
+| `linux-generic-hwe-22.04` | **legacy bundle only**; not needed for a fresh install |
+
+`gnome-shell-extension-manager` and `dconf-editor` were removed from the playbooks: they are GUI-only,
+not used by any task, and `gnome-shell-extension-manager` dragged in the whole GNOME upgrade chain.
 
 Everything else the deployment uses — AppImage, `voip.ini`, GNOME extension zips, touch-driver sources, Plymouth background — is already inside the repository's `assets/` directory and is copied over by Ansible; it is not fetched from the internet.
