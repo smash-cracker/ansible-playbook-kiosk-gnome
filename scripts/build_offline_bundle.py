@@ -91,11 +91,15 @@ def version_ok(have, op, want):
     return run(["dpkg", "--compare-versions", have, op, want]).returncode == 0
 
 
-def download(outdir, pkg, skipped):
+def download(outdir, pkg, skipped, label=""):
+    prefix = f"{label} " if label else "  "
+    print(f"{prefix}downloading {pkg} ... ", end="", flush=True)
     res = run(["apt", "download", pkg])
     if res.returncode != 0:
         skipped.add(pkg)
+        print("SKIP")
         return False
+    print("ok")
     return True
 
 
@@ -182,8 +186,10 @@ def replay_manifest(outdir, manifest):
         return 1
 
     failed = []
-    for entry in entries:
+    for i, entry in enumerate(entries, 1):
+        print(f"[{i}/{len(entries)}] downloading {entry} ... ", end="", flush=True)
         res = run(["apt-get", "download", entry])
+        print("ok" if res.returncode == 0 else "FAILED")
         if res.returncode != 0:
             failed.append(entry)
             print(f"  failed: {entry}: {res.stderr.strip()}", file=sys.stderr)
@@ -248,8 +254,9 @@ def main():
     print(f"candidates: {len(candidates)}  missing from baseline: {len(needed)}")
 
     skipped = set()
-    for pkg in sorted(needed):
-        download(".", pkg, skipped)
+    needed_sorted = sorted(needed)
+    for i, pkg in enumerate(needed_sorted, 1):
+        download(".", pkg, skipped, label=f"[{i}/{len(needed_sorted)}]")
 
     upgraded = set()
     missing = set()
