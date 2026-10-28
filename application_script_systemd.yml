@@ -15,7 +15,7 @@
     user_name: cezen
     # Change this if you copy the AppImage under a versioned name, e.g.
     # voip-x86_64_v1.6.8.AppImage
-    appimage_name: voip-x86_64.AppImage
+    appimage_name: voip-x86_64_v1.5.16.AppImage
     ini_name: voip.ini
     appimage_path: /home/{{ user_name }}/Applications/{{ appimage_name }}
     ini_path: /home/{{ user_name }}/.config/voip/{{ ini_name }}
