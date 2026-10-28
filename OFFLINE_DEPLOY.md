@@ -34,7 +34,7 @@ ISO/installer-option combination**, not once per device; step 3 runs per device.
 ```bash
 # 1. ONE TIME on the laptop: build the delta bundle and put it on the data stick.
 #    The builder also copies kiosk-firstboot.sh inside the bundle.
-./scripts/build_offline_bundle.py --baseline ~/baseline.txt --output ~/offline-packages-delta
+./scripts/build_offline_bundle.py --baseline ./baseline-22.04.5.txt --output ~/offline-packages-delta
 cp -a ~/offline-packages-delta /media/$USER/DEBS/
 
 # 2. kiosk, after the fresh install and first desktop login: install + verify
@@ -47,9 +47,11 @@ bash /media/$USER/DEBS/offline-packages-delta/kiosk-firstboot.sh
 
 `baseline.txt` is the package list of a *fresh* install. Every kiosk installed from the same ISO
 with the same installer options has the same baseline, so capture it once (from the first kiosk
-before installing anything, or from a throwaway VM), keep it next to the repo, and rebuild only
-when the ISO, installer options or package set change. `kiosk-firstboot.sh --check` on each new
-kiosk catches a device that drifted from that baseline.
+before installing anything, or from a throwaway VM) and rebuild only when the ISO, installer
+options or package set change. A backup of the 22.04.5 baseline is committed as
+`baseline-22.04.5.txt` in the repo root — that is the file to build from, so the bundle can be
+reproduced without any target machine. `kiosk-firstboot.sh --check` on each new kiosk catches a
+device that drifted from that baseline.
 
 Each bundle directory records what it contains:
 
@@ -197,11 +199,12 @@ dpkg -l "linux-headers-$(uname -r)" | grep '^ii'      # expected ii on a desktop
 dpkg-query -W -f='${Package}\t${Version}\n' | sort > ~/baseline.txt
 ```
 
-Copy `baseline.txt` to the laptop (Ventoy or scp), then build the delta:
+Copy `baseline.txt` to the laptop (Ventoy or scp), then build the delta. If the target uses the
+same ISO as before, skip the capture and use the committed `baseline-22.04.5.txt` instead:
 
 ```bash
 cd /home/denny/Office/ansible-playbook-kiosk-gnome
-./scripts/build_offline_bundle.py --baseline /path/to/baseline.txt \
+./scripts/build_offline_bundle.py --baseline ./baseline-22.04.5.txt \
     --output ~/offline-packages-delta
 ```
 
@@ -217,7 +220,9 @@ The script:
 - if a downloaded package requires a newer version of a baseline package, adds that upgrade **and
   every baseline package that pins the old version with an exact `(= version)` dependency**
   (polkitd, accountsservice, gdm3, network-manager, …);
-- writes `packages.txt` and prints the list of baseline upgrades for review.
+- writes `packages.txt` (deb file names) and `manifest.txt` (`package=version` pins, replayable
+  with `--manifest`), copies in `kiosk-firstboot.sh`, and prints the list of baseline upgrades for
+  review.
 
 A fresh 22.04.5 desktop already has `linux-headers-6.8.0-40-generic`, so no kernel debs are needed.
 If the baseline check shows no headers, add `linux-headers-$(uname -r)` to `--pkgs`.
