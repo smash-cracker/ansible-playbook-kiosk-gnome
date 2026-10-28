@@ -159,15 +159,6 @@ ip -4 -o addr show scope global 2>/dev/null | awk '{print "  " $2 ": " $4}'
 echo
 if ((CHECKS_FAIL == 0)); then
     printf '\033[32mAll %d checks passed.\033[0m\n' "$CHECKS_OK"
-    cat <<EOF
-
-Next steps:
-  1. On the kiosk: log in to the GNOME desktop once and leave the session running.
-  2. On the laptop, add this address to hosts.ini:
-       <ip> ansible_user=$CURRENT_USER ansible_ssh_pass=<password> ansible_become_pass=<password>
-  3. On the laptop:
-       ./scripts/deploy.sh --host <ip>
-EOF
     exit 0
 fi
 
