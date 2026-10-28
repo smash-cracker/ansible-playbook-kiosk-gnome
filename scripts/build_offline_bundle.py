@@ -18,8 +18,14 @@ together with every baseline package that pins the old library with an exact
 network-manager). That is what prevents the offline install from half-upgrading
 the base system.
 
+Every bundle also gets a `manifest.txt` with the exact `package=version` pins,
+so it can be reproduced later without a baseline:
+
+    scripts/build_offline_bundle.py --manifest ~/offline-delta/manifest.txt --output ~/offline-delta
+
 Usage:
     scripts/build_offline_bundle.py --baseline baseline.txt --output ~/offline-delta
+    scripts/build_offline_bundle.py --manifest manifest.txt --output ~/offline-delta
 """
 
 import argparse
@@ -134,24 +140,86 @@ def exact_dependents(pkg, version, baseline):
             if q != pkg and pattern.search(deps_map.get(q, ""))}
 
 
+def ship_provisioner(outdir):
+    """Copy kiosk-firstboot.sh next to the debs so the stick is self-contained."""
+    provisioner = os.path.join(os.path.dirname(os.path.abspath(__file__)), "kiosk-firstboot.sh")
+    if os.path.isfile(provisioner):
+        dst = os.path.join(outdir, os.path.basename(provisioner))
+        shutil.copy2(provisioner, dst)
+        os.chmod(dst, 0o755)
+
+
+def write_manifest(outdir):
+    """Record the exact package=version pins of every .deb in outdir."""
+    entries = []
+    for f in debs(outdir):
+        fields = deb_fields(os.path.join(outdir, f))
+        pkg, ver = fields.get("Package"), fields.get("Version")
+        if pkg and ver:
+            entries.append(f"{pkg}={ver}")
+
+    with open(os.path.join(outdir, "manifest.txt"), "w") as fh:
+        fh.write("# Exact package pins for this bundle.\n")
+        fh.write("# Replay later without a baseline.txt:\n")
+        fh.write("#   scripts/build_offline_bundle.py --manifest manifest.txt --output DIR\n")
+        for entry in sorted(entries):
+            fh.write(entry + "\n")
+    return len(entries)
+
+
+def replay_manifest(outdir, manifest):
+    """Download exactly the pinned versions listed in an earlier manifest.txt."""
+    entries = []
+    with open(manifest) as fh:
+        for line in fh:
+            line = line.strip()
+            if not line or line.startswith("#"):
+                continue
+            entries.append(line)
+
+    if not entries:
+        print(f"error: no package pins in {manifest}", file=sys.stderr)
+        return 1
+
+    failed = []
+    for entry in entries:
+        res = run(["apt-get", "download", entry])
+        if res.returncode != 0:
+            failed.append(entry)
+            print(f"  failed: {entry}: {res.stderr.strip()}", file=sys.stderr)
+    if failed:
+        print(f"error: {len(failed)} of {len(entries)} pins could not be downloaded",
+              file=sys.stderr)
+        return 1
+    print(f"downloaded {len(entries)} pinned package(s)")
+    return 0
+
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__,
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("--baseline", required=True,
+    ap.add_argument("--baseline",
                     help="output of dpkg-query -W from the fresh target")
+    ap.add_argument("--manifest",
+                    help="replay a previous bundle's manifest.txt (no baseline needed)")
     ap.add_argument("--output", required=True, help="folder to download into")
     ap.add_argument("--pkgs", default=" ".join(DEFAULT_PKGS),
                     help="space separated packages to install on the target")
     args = ap.parse_args()
 
+    if bool(args.baseline) == bool(args.manifest):
+        ap.error("pass exactly one of --baseline or --manifest")
+    manifest_path = os.path.abspath(args.manifest) if args.manifest else None
+
     baseline = {}
-    with open(args.baseline) as fh:
-        for line in fh:
-            parts = line.rstrip("\n").split("\t")
-            if not parts or not parts[0].strip():
-                continue
-            name = parts[0].strip()
-            baseline[name] = parts[1].strip() if len(parts) > 1 else None
+    if args.baseline:
+        with open(args.baseline) as fh:
+            for line in fh:
+                parts = line.rstrip("\n").split("\t")
+                if not parts or not parts[0].strip():
+                    continue
+                name = parts[0].strip()
+                baseline[name] = parts[1].strip() if len(parts) > 1 else None
 
     pkgs = args.pkgs.split()
     os.makedirs(args.output, exist_ok=True)
@@ -159,6 +227,21 @@ def main():
 
     for f in debs("."):
         os.unlink(f)  # rebuild from scratch
+
+    # Replay mode: download the exact pins from a previous manifest.
+    if manifest_path:
+        if replay_manifest(".", manifest_path) != 0:
+            return 1
+        write_manifest(".")
+        with open("packages.txt", "w") as fh:
+            for f in debs("."):
+                fh.write(f + "\n")
+        ship_provisioner(os.path.abspath("."))
+        print()
+        print(f"debs in bundle : {len(debs('.'))}")
+        print(f"manifest       : manifest.txt")
+        print(f"output         : {os.path.abspath('.')}")
+        return 0
 
     candidates = apt_rdepends(pkgs)
     needed = {p for p in candidates if p not in baseline}
@@ -233,19 +316,15 @@ def main():
     with open("packages.txt", "w") as fh:
         for f in debs("."):
             fh.write(f + "\n")
+    write_manifest(".")
 
-    # Ship the first-boot provisioner with the bundle, so the pendrive is
-    # self-contained: bash <stick>/offline-packages-delta/kiosk-firstboot.sh
-    provisioner = os.path.join(os.path.dirname(os.path.abspath(__file__)), "kiosk-firstboot.sh")
-    if os.path.isfile(provisioner):
-        dst = os.path.join(os.path.abspath("."), os.path.basename(provisioner))
-        shutil.copy2(provisioner, dst)
-        os.chmod(dst, 0o755)
+    ship_provisioner(os.path.abspath("."))
 
     print()
     print(f"debs in bundle : {len(debs('.'))}")
     print(f"skipped        : {' '.join(sorted(skipped)) or '(none)'}")
     print(f"baseline upgrades: {' '.join(sorted(upgraded)) or '(none)'}")
+    print(f"manifest       : manifest.txt")
     print(f"output         : {os.path.abspath('.')}")
     return 0
 

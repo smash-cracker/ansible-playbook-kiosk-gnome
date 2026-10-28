@@ -51,6 +51,22 @@ before installing anything, or from a throwaway VM), keep it next to the repo, a
 when the ISO, installer options or package set change. `kiosk-firstboot.sh --check` on each new
 kiosk catches a device that drifted from that baseline.
 
+Each bundle directory records what it contains:
+
+- `packages.txt` — every `.deb` file name.
+- `manifest.txt` — exact `package=version` pins.
+
+`manifest.txt` is enough to rebuild the same bundle later without a fresh baseline (for example
+after deleting the folder, or on a different laptop):
+
+```bash
+./scripts/build_offline_bundle.py \
+    --manifest ~/offline-packages-delta/manifest.txt \
+    --output ~/offline-packages-delta
+```
+
+Commit `manifest.txt` if you want the exact package set in version control.
+
 - `kiosk-firstboot.sh` installs the bundle, enables SSH, and verifies the assumptions the
   playbooks make (Ubuntu 22.04, uid 1000, kernel headers, `gcc-12`, `libfuse2`, `dkms`, GNOME
   session). It exits non-zero if anything is missing.
