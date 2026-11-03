@@ -202,7 +202,7 @@ playbooks=(i2c_setup.yml lite_deploy_script.yml)
 if ((USE_SYSTEMD)); then
     playbooks+=(application_script_systemd.yml)
 else
-    playbooks+=(application_script.yml)
+    playbooks+=(application_script_systemd.yml)
 fi
 playbooks+=(fetch_uuid.yml boot_image.yml)
 ((SKIP_TOUCH)) || playbooks+=(touch_driver.yml)
